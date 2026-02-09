@@ -95,6 +95,16 @@ button.warn {
   padding: 12px 0;
 }
 
+.group {
+  margin-top: 14px;
+}
+
+.group-title {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: #344054;
+}
+
 .item:first-of-type {
   border-top: none;
 }

@@ -8,10 +8,16 @@ type FeedItem = {
   item_id: number;
   title: string;
   source: string;
+  category: string;
   url: string;
   short_reason: string;
   rank: number;
   saved: boolean;
+};
+
+type FeedGroup = {
+  category: string;
+  items: FeedItem[];
 };
 
 type FeedResponse = {
@@ -19,6 +25,7 @@ type FeedResponse = {
   slot: Slot;
   generated_at: string;
   items: FeedItem[];
+  groups?: FeedGroup[];
 };
 
 type BookmarkResponse = {
@@ -50,6 +57,19 @@ function defaultSlotByKstNow(): Slot {
   return isSlotOpen("pm") ? "pm" : "am";
 }
 
+function categoryLabel(key: string): string {
+  const map: Record<string, string> = {
+    tech: "Tech",
+    world: "World",
+    business: "Business",
+    science: "Science",
+    korea: "Korea",
+    "korea-business": "Korea Business",
+    general: "General"
+  };
+  return map[key] ?? key;
+}
+
 export default function HomePage() {
   const [slot, setSlot] = useState<Slot>(defaultSlotByKstNow());
   const [feed, setFeed] = useState<FeedResponse | null>(null);
@@ -63,6 +83,12 @@ export default function HomePage() {
     if (!feed?.generated_at) return "-";
     return new Date(feed.generated_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
   }, [feed?.generated_at]);
+  const groups = useMemo<FeedGroup[]>(() => {
+    if (!feed) return [];
+    if (feed.groups && feed.groups.length > 0) return feed.groups;
+    if (feed.items && feed.items.length > 0) return [{ category: "general", items: feed.items }];
+    return [];
+  }, [feed]);
 
   const loadFeed = async (targetSlot: Slot) => {
     if (!isSlotOpen(targetSlot)) {
@@ -139,26 +165,31 @@ export default function HomePage() {
         {loading && <p className="meta">불러오는 중...</p>}
         {error && <p className="error">{error}</p>}
 
-        {feed?.items?.map((item) => (
-          <article className="item" key={item.item_id}>
-            <div className="row">
-              <strong>#{item.rank}</strong>
-              <span className="meta">{item.source}</span>
-            </div>
-            <div>
-              <a href={item.url} target="_blank" rel="noreferrer">
-                {item.title}
-              </a>
-            </div>
-            <div className="meta">{item.short_reason}</div>
-            <div className="actions">
-              <button className="primary" onClick={() => void sendFeedback(item.item_id, "saved")}>Save</button>
-              <button className="warn" onClick={() => void sendFeedback(item.item_id, "skipped")}>Skip</button>
-            </div>
-          </article>
+        {groups.map((group) => (
+          <section key={group.category} className="group">
+            <h3 className="group-title">{categoryLabel(group.category)}</h3>
+            {group.items.map((item) => (
+              <article className="item" key={item.item_id}>
+                <div className="row">
+                  <strong>#{item.rank}</strong>
+                  <span className="meta">{item.source}</span>
+                </div>
+                <div>
+                  <a href={item.url} target="_blank" rel="noreferrer">
+                    {item.title}
+                  </a>
+                </div>
+                <div className="meta">{item.short_reason}</div>
+                <div className="actions">
+                  <button className="primary" onClick={() => void sendFeedback(item.item_id, "saved")}>Save</button>
+                  <button className="warn" onClick={() => void sendFeedback(item.item_id, "skipped")}>Skip</button>
+                </div>
+              </article>
+            ))}
+          </section>
         ))}
 
-        {!loading && !feed?.items?.length && <p className="meta">표시할 피드가 없습니다.</p>}
+        {!loading && !groups.length && <p className="meta">표시할 피드가 없습니다.</p>}
       </section>
 
       <section className="panel">
