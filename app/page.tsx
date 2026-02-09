@@ -35,6 +35,7 @@ type BookmarkResponse = {
     url: string;
     source: string;
     saved: boolean;
+    saved_at?: string;
   }>;
 };
 
@@ -202,7 +203,10 @@ export default function HomePage() {
             <a href={b.url} target="_blank" rel="noreferrer">
               {b.title}
             </a>
-            <div className="meta">{b.source}</div>
+            <div className="meta">
+              {b.source}
+              {b.saved_at ? ` · Saved ${new Date(b.saved_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}` : ""}
+            </div>
           </article>
         ))}
         {!bookmarks.length && <p className="meta">아직 저장한 항목이 없습니다.</p>}
