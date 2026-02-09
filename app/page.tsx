@@ -33,17 +33,31 @@ type BookmarkResponse = {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
-function slotByKstNow(): Slot {
-  const hour = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" })).getHours();
-  return hour < 12 ? "am" : "pm";
+function kstNowParts(): { hour: number; minute: number } {
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+  return { hour: now.getHours(), minute: now.getMinutes() };
+}
+
+function isSlotOpen(slot: Slot): boolean {
+  const { hour, minute } = kstNowParts();
+  if (slot === "am") {
+    return hour > 7 || (hour === 7 && minute >= 30);
+  }
+  return hour > 21 || (hour === 21 && minute >= 30);
+}
+
+function defaultSlotByKstNow(): Slot {
+  return isSlotOpen("pm") ? "pm" : "am";
 }
 
 export default function HomePage() {
-  const [slot, setSlot] = useState<Slot>(slotByKstNow());
+  const [slot, setSlot] = useState<Slot>(defaultSlotByKstNow());
   const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [bookmarks, setBookmarks] = useState<BookmarkResponse["items"]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const amOpen = isSlotOpen("am");
+  const pmOpen = isSlotOpen("pm");
 
   const generatedLabel = useMemo(() => {
     if (!feed?.generated_at) return "-";
@@ -51,11 +65,22 @@ export default function HomePage() {
   }, [feed?.generated_at]);
 
   const loadFeed = async (targetSlot: Slot) => {
+    if (!isSlotOpen(targetSlot)) {
+      setFeed(null);
+      setError(targetSlot === "pm" ? "PM 피드는 KST 21:30 이후 열립니다." : "AM 피드는 KST 07:30 이후 열립니다.");
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
       const res = await fetch(`${API_BASE}/feeds/today?slot=${targetSlot}`, { cache: "no-store" });
       if (!res.ok) {
+        if (res.status === 404) {
+          setFeed(null);
+          setError("해당 슬롯 피드가 아직 생성되지 않았습니다.");
+          return;
+        }
         throw new Error(`feed_error_${res.status}`);
       }
       const data: FeedResponse = await res.json();
@@ -105,8 +130,8 @@ export default function HomePage() {
         <div className="row">
           <strong>오늘 피드</strong>
           <div className="controls">
-            <button className={slot === "am" ? "soft" : ""} onClick={() => setSlot("am")}>AM</button>
-            <button className={slot === "pm" ? "soft" : ""} onClick={() => setSlot("pm")}>PM</button>
+            <button disabled={!amOpen} className={slot === "am" ? "soft" : ""} onClick={() => setSlot("am")}>AM</button>
+            <button disabled={!pmOpen} className={slot === "pm" ? "soft" : ""} onClick={() => setSlot("pm")}>PM</button>
             <button onClick={() => void loadFeed(slot)}>새로고침</button>
           </div>
         </div>
