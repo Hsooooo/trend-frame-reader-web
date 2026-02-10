@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 
 type Slot = "am" | "pm";
 
+type FeedbackAction = "saved" | "skipped";
+
 type FeedItem = {
   item_id: number;
   title: string;
@@ -13,6 +15,8 @@ type FeedItem = {
   short_reason: string;
   rank: number;
   saved: boolean;
+  skipped: boolean;
+  feedback_action?: FeedbackAction | null;
 };
 
 type FeedGroup = {
@@ -60,15 +64,26 @@ function defaultSlotByKstNow(): Slot {
 
 function categoryLabel(key: string): string {
   const map: Record<string, string> = {
-    tech: "Tech",
-    world: "World",
-    business: "Business",
-    science: "Science",
-    korea: "Korea",
-    "korea-business": "Korea Business",
+    ai: "AI",
+    devtools: "DevTools",
+    "infra-cloud": "Infra/Cloud",
+    security: "Security",
+    "world-politics": "World Politics",
+    "world-economy": "World Economy",
+    "korea-politics": "Korea Politics",
+    "korea-society": "Korea Society",
+    "korea-economy": "Korea Economy",
+    "korea-markets": "Korea Markets",
+    "korea-tech": "Korea Tech",
     general: "General"
   };
   return map[key] ?? key;
+}
+
+function feedbackLabel(action?: FeedbackAction | null): string {
+  if (action === "saved") return "Saved";
+  if (action === "skipped") return "Skipped";
+  return "";
 }
 
 export default function HomePage() {
@@ -77,6 +92,7 @@ export default function HomePage() {
   const [bookmarks, setBookmarks] = useState<BookmarkResponse["items"]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [pendingMap, setPendingMap] = useState<Record<number, boolean>>({});
   const amOpen = isSlotOpen("am");
   const pmOpen = isSlotOpen("pm");
 
@@ -84,6 +100,7 @@ export default function HomePage() {
     if (!feed?.generated_at) return "-";
     return new Date(feed.generated_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
   }, [feed?.generated_at]);
+
   const groups = useMemo<FeedGroup[]>(() => {
     if (!feed) return [];
     if (feed.groups && feed.groups.length > 0) return feed.groups;
@@ -131,17 +148,22 @@ export default function HomePage() {
     }
   };
 
-  const sendFeedback = async (itemId: number, action: "saved" | "skipped") => {
+  const sendFeedback = async (item: FeedItem, action: FeedbackAction) => {
+    if (item.feedback_action || pendingMap[item.item_id]) return;
+
+    setPendingMap((prev) => ({ ...prev, [item.item_id]: true }));
     const res = await fetch(`${API_BASE}/feedback`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ item_id: itemId, action })
+      body: JSON.stringify({ item_id: item.item_id, action })
     });
     if (!res.ok) {
       setError(`feedback_error_${res.status}`);
+      setPendingMap((prev) => ({ ...prev, [item.item_id]: false }));
       return;
     }
     await Promise.all([loadFeed(slot), loadBookmarks()]);
+    setPendingMap((prev) => ({ ...prev, [item.item_id]: false }));
   };
 
   useEffect(() => {
@@ -169,24 +191,49 @@ export default function HomePage() {
         {groups.map((group) => (
           <section key={group.category} className="group">
             <h3 className="group-title">{categoryLabel(group.category)}</h3>
-            {group.items.map((item) => (
-              <article className="item" key={item.item_id}>
-                <div className="row">
-                  <strong>#{item.rank}</strong>
-                  <span className="meta">{item.source}</span>
-                </div>
-                <div>
-                  <a href={item.url} target="_blank" rel="noreferrer">
-                    {item.title}
-                  </a>
-                </div>
-                <div className="meta">{item.short_reason}</div>
-                <div className="actions">
-                  <button className="primary" onClick={() => void sendFeedback(item.item_id, "saved")}>Save</button>
-                  <button className="warn" onClick={() => void sendFeedback(item.item_id, "skipped")}>Skip</button>
-                </div>
-              </article>
-            ))}
+            {group.items.map((item) => {
+              const action = item.feedback_action ?? null;
+              const done = Boolean(action);
+              const pending = Boolean(pendingMap[item.item_id]);
+
+              return (
+                <article className="item" key={item.item_id}>
+                  <div className="row">
+                    <strong>#{item.rank}</strong>
+                    <span className="meta">{item.source}</span>
+                  </div>
+                  <div>
+                    <a href={item.url} target="_blank" rel="noreferrer">
+                      {item.title}
+                    </a>
+                  </div>
+                  <div className="meta">{item.short_reason}</div>
+
+                  {done && (
+                    <div className="status">
+                      <span className={`badge ${action}`}>{feedbackLabel(action)}</span>
+                    </div>
+                  )}
+
+                  <div className="actions">
+                    <button
+                      className="primary"
+                      disabled={done || pending}
+                      onClick={() => void sendFeedback(item, "saved")}
+                    >
+                      Save
+                    </button>
+                    <button
+                      className="warn"
+                      disabled={done || pending}
+                      onClick={() => void sendFeedback(item, "skipped")}
+                    >
+                      Skip
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </section>
         ))}
 
