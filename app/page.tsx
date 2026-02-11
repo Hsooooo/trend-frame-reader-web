@@ -33,6 +33,12 @@ type FeedResponse = {
 };
 
 type BookmarkResponse = {
+  page: number;
+  size: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
   items: Array<{
     item_id: number;
     title: string;
@@ -90,6 +96,10 @@ export default function HomePage() {
   const [slot, setSlot] = useState<Slot>(defaultSlotByKstNow());
   const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [bookmarks, setBookmarks] = useState<BookmarkResponse["items"]>([]);
+  const [bookmarksPage, setBookmarksPage] = useState(1);
+  const [bookmarksPageSize] = useState(10);
+  const [bookmarksTotal, setBookmarksTotal] = useState(0);
+  const [bookmarksTotalPages, setBookmarksTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [pendingMap, setPendingMap] = useState<Record<number, boolean>>({});
@@ -137,14 +147,19 @@ export default function HomePage() {
     }
   };
 
-  const loadBookmarks = async () => {
+  const loadBookmarks = async (page: number) => {
     try {
-      const res = await fetch(`${API_BASE}/bookmarks`, { cache: "no-store" });
+      const res = await fetch(`${API_BASE}/bookmarks?page=${page}&size=${bookmarksPageSize}`, { cache: "no-store" });
       if (!res.ok) return;
       const data: BookmarkResponse = await res.json();
       setBookmarks(data.items);
+      setBookmarksPage(data.page);
+      setBookmarksTotal(data.total);
+      setBookmarksTotalPages(data.total_pages);
     } catch {
       setBookmarks([]);
+      setBookmarksTotal(0);
+      setBookmarksTotalPages(0);
     }
   };
 
@@ -162,13 +177,23 @@ export default function HomePage() {
       setPendingMap((prev) => ({ ...prev, [item.item_id]: false }));
       return;
     }
-    await Promise.all([loadFeed(slot), loadBookmarks()]);
+    await loadFeed(slot);
+    if (action === "saved") {
+      setBookmarksPage(1);
+      await loadBookmarks(1);
+    } else {
+      await loadBookmarks(bookmarksPage);
+    }
     setPendingMap((prev) => ({ ...prev, [item.item_id]: false }));
   };
 
   useEffect(() => {
-    void Promise.all([loadFeed(slot), loadBookmarks()]);
+    void loadFeed(slot);
   }, [slot]);
+
+  useEffect(() => {
+    void loadBookmarks(bookmarksPage);
+  }, [bookmarksPage]);
 
   return (
     <main>
@@ -243,7 +268,24 @@ export default function HomePage() {
       <section className="panel">
         <div className="row">
           <strong>북마크</strong>
-          <button onClick={() => void loadBookmarks()}>새로고침</button>
+          <button onClick={() => void loadBookmarks(bookmarksPage)}>새로고침</button>
+        </div>
+        <div className="pager">
+          <button
+            onClick={() => setBookmarksPage((prev) => Math.max(1, prev - 1))}
+            disabled={bookmarksPage <= 1}
+          >
+            이전
+          </button>
+          <span className="meta">
+            {bookmarksTotalPages > 0 ? `${bookmarksPage} / ${bookmarksTotalPages}` : "0 / 0"} · Total {bookmarksTotal}
+          </span>
+          <button
+            onClick={() => setBookmarksPage((prev) => Math.min(bookmarksTotalPages || 1, prev + 1))}
+            disabled={bookmarksPage >= bookmarksTotalPages || bookmarksTotalPages === 0}
+          >
+            다음
+          </button>
         </div>
         {bookmarks.map((b) => (
           <article className="item" key={b.item_id}>

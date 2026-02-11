@@ -59,6 +59,14 @@ p {
   gap: 8px;
 }
 
+.pager {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 button {
   border: 1px solid var(--line);
   background: #fff;
