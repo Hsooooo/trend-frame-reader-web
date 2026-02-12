@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 
 type Slot = "am" | "pm";
-
-type FeedbackAction = "saved" | "skipped";
+type CurationAction = "saved" | "skipped";
+type PreferenceAction = "liked" | "disliked";
+type FeedbackAction = CurationAction | PreferenceAction;
 
 type FeedItem = {
   item_id: number;
   title: string;
+  translated_title_ko?: string | null;
   source: string;
   category: string;
   url: string;
@@ -16,7 +18,11 @@ type FeedItem = {
   rank: number;
   saved: boolean;
   skipped: boolean;
-  feedback_action?: FeedbackAction | null;
+  liked?: boolean;
+  disliked?: boolean;
+  curation_action?: CurationAction | null;
+  preference_action?: PreferenceAction | null;
+  feedback_action?: CurationAction | null;
 };
 
 type FeedGroup = {
@@ -86,10 +92,29 @@ function categoryLabel(key: string): string {
   return map[key] ?? key;
 }
 
-function feedbackLabel(action?: FeedbackAction | null): string {
+function curationLabel(action?: CurationAction | null): string {
   if (action === "saved") return "Saved";
   if (action === "skipped") return "Skipped";
   return "";
+}
+
+function preferenceLabel(action?: PreferenceAction | null): string {
+  if (action === "liked") return "Liked";
+  if (action === "disliked") return "Disliked";
+  return "";
+}
+
+function isCurationAction(action: FeedbackAction): action is CurationAction {
+  return action === "saved" || action === "skipped";
+}
+
+function sendClickEvent(itemId: number) {
+  void fetch(`${API_BASE}/events/click`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ item_id: itemId }),
+    keepalive: true
+  }).catch(() => undefined);
 }
 
 export default function HomePage() {
@@ -102,7 +127,7 @@ export default function HomePage() {
   const [bookmarksTotalPages, setBookmarksTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
-  const [pendingMap, setPendingMap] = useState<Record<number, boolean>>({});
+  const [pendingMap, setPendingMap] = useState<Record<string, boolean>>({});
   const amOpen = isSlotOpen("am");
   const pmOpen = isSlotOpen("pm");
 
@@ -164,27 +189,38 @@ export default function HomePage() {
   };
 
   const sendFeedback = async (item: FeedItem, action: FeedbackAction) => {
-    if (item.feedback_action || pendingMap[item.item_id]) return;
+    const group = isCurationAction(action) ? "curation" : "preference";
+    const pendingKey = `${item.item_id}:${group}`;
 
-    setPendingMap((prev) => ({ ...prev, [item.item_id]: true }));
+    const curationAction = item.curation_action ?? (item.saved ? "saved" : item.skipped ? "skipped" : null);
+    const preferenceAction = item.preference_action ?? (item.liked ? "liked" : item.disliked ? "disliked" : null);
+
+    if ((group === "curation" && curationAction) || (group === "preference" && preferenceAction) || pendingMap[pendingKey]) {
+      return;
+    }
+
+    setPendingMap((prev) => ({ ...prev, [pendingKey]: true }));
     const res = await fetch(`${API_BASE}/feedback`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ item_id: item.item_id, action })
     });
+
     if (!res.ok) {
       setError(`feedback_error_${res.status}`);
-      setPendingMap((prev) => ({ ...prev, [item.item_id]: false }));
+      setPendingMap((prev) => ({ ...prev, [pendingKey]: false }));
       return;
     }
+
     await loadFeed(slot);
-    if (action === "saved") {
+    if (group === "curation" && action === "saved") {
       setBookmarksPage(1);
       await loadBookmarks(1);
-    } else {
+    } else if (group === "curation") {
       await loadBookmarks(bookmarksPage);
     }
-    setPendingMap((prev) => ({ ...prev, [item.item_id]: false }));
+
+    setPendingMap((prev) => ({ ...prev, [pendingKey]: false }));
   };
 
   useEffect(() => {
@@ -217,9 +253,15 @@ export default function HomePage() {
           <section key={group.category} className="group">
             <h3 className="group-title">{categoryLabel(group.category)}</h3>
             {group.items.map((item) => {
-              const action = item.feedback_action ?? null;
-              const done = Boolean(action);
-              const pending = Boolean(pendingMap[item.item_id]);
+              const curationAction = item.curation_action ?? (item.saved ? "saved" : item.skipped ? "skipped" : null);
+              const preferenceAction = item.preference_action ?? (item.liked ? "liked" : item.disliked ? "disliked" : null);
+              const curationDone = Boolean(curationAction);
+              const preferenceDone = Boolean(preferenceAction);
+              const curationPending = Boolean(pendingMap[`${item.item_id}:curation`]);
+              const preferencePending = Boolean(pendingMap[`${item.item_id}:preference`]);
+
+              const displayTitle = item.translated_title_ko?.trim() ? item.translated_title_ko : item.title;
+              const hasTranslatedTitle = Boolean(item.translated_title_ko && item.translated_title_ko !== item.title);
 
               return (
                 <article className="item" key={item.item_id}>
@@ -228,33 +270,54 @@ export default function HomePage() {
                     <span className="meta">{item.source}</span>
                   </div>
                   <div>
-                    <a href={item.url} target="_blank" rel="noreferrer">
-                      {item.title}
+                    <a href={item.url} target="_blank" rel="noreferrer" onClick={() => sendClickEvent(item.item_id)}>
+                      {displayTitle}
                     </a>
                   </div>
+                  {hasTranslatedTitle && <div className="meta original-title">EN: {item.title}</div>}
                   <div className="meta">{item.short_reason}</div>
 
-                  {done && (
+                  {(curationDone || preferenceDone) && (
                     <div className="status">
-                      <span className={`badge ${action}`}>{feedbackLabel(action)}</span>
+                      {curationAction && <span className={`badge ${curationAction}`}>{curationLabel(curationAction)}</span>}
+                      {preferenceAction && <span className={`badge ${preferenceAction}`}>{preferenceLabel(preferenceAction)}</span>}
                     </div>
                   )}
 
-                  <div className="actions">
-                    <button
-                      className="primary"
-                      disabled={done || pending}
-                      onClick={() => void sendFeedback(item, "saved")}
-                    >
-                      Save
-                    </button>
-                    <button
-                      className="warn"
-                      disabled={done || pending}
-                      onClick={() => void sendFeedback(item, "skipped")}
-                    >
-                      Skip
-                    </button>
+                  <div className="action-grid">
+                    <div className="actions">
+                      <button
+                        className="primary"
+                        disabled={curationDone || curationPending}
+                        onClick={() => void sendFeedback(item, "saved")}
+                      >
+                        Save
+                      </button>
+                      <button
+                        className="warn"
+                        disabled={curationDone || curationPending}
+                        onClick={() => void sendFeedback(item, "skipped")}
+                      >
+                        Skip
+                      </button>
+                    </div>
+
+                    <div className="actions">
+                      <button
+                        className="like"
+                        disabled={preferenceDone || preferencePending}
+                        onClick={() => void sendFeedback(item, "liked")}
+                      >
+                        Like
+                      </button>
+                      <button
+                        className="dislike"
+                        disabled={preferenceDone || preferencePending}
+                        onClick={() => void sendFeedback(item, "disliked")}
+                      >
+                        Dislike
+                      </button>
+                    </div>
                   </div>
                 </article>
               );

@@ -98,6 +98,18 @@ button.warn {
   background: #fee4e2;
 }
 
+button.like {
+  color: #175cd3;
+  border-color: #84caff;
+  background: #eff8ff;
+}
+
+button.dislike {
+  color: #b42318;
+  border-color: #fda29b;
+  background: #fff1f3;
+}
+
 .item {
   border-top: 1px solid var(--line);
   padding: 12px 0;
@@ -132,8 +144,16 @@ a:hover {
   margin-top: 4px;
 }
 
+.original-title {
+  opacity: 0.9;
+}
+
 .status {
   margin-top: 8px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .badge {
@@ -157,13 +177,37 @@ a:hover {
   border: 1px solid #fca5a5;
 }
 
+.badge.liked {
+  background: #dbeafe;
+  color: #1e3a8a;
+  border: 1px solid #93c5fd;
+}
+
+.badge.disliked {
+  background: #ffe4e6;
+  color: #9f1239;
+  border: 1px solid #fda4af;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .actions {
   display: flex;
   gap: 8px;
-  margin-top: 8px;
 }
 
 .error {
   color: var(--danger);
   font-size: 0.92rem;
+}
+
+@media (max-width: 640px) {
+  .action-grid {
+    grid-template-columns: 1fr;
+  }
 }
