@@ -1,78 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-
-type Slot = "am" | "pm";
-type CurationAction = "saved" | "skipped";
-type PreferenceAction = "liked" | "disliked";
-type FeedbackAction = CurationAction | PreferenceAction;
-
-type FeedItem = {
-  item_id: number;
-  title: string;
-  translated_title_ko?: string | null;
-  source: string;
-  category: string;
-  url: string;
-  short_reason: string;
-  rank: number;
-  saved: boolean;
-  skipped: boolean;
-  liked?: boolean;
-  disliked?: boolean;
-  curation_action?: CurationAction | null;
-  preference_action?: PreferenceAction | null;
-  feedback_action?: CurationAction | null;
-};
-
-type FeedGroup = {
-  category: string;
-  items: FeedItem[];
-};
-
-type FeedResponse = {
-  feed_date: string;
-  slot: Slot;
-  generated_at: string;
-  items: FeedItem[];
-  groups?: FeedGroup[];
-};
-
-type BookmarkResponse = {
-  page: number;
-  size: number;
-  total: number;
-  total_pages: number;
-  has_next: boolean;
-  has_prev: boolean;
-  items: Array<{
-    item_id: number;
-    title: string;
-    url: string;
-    source: string;
-    saved: boolean;
-    saved_at?: string;
-  }>;
-};
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-
-function kstNowParts(): { hour: number; minute: number } {
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-  return { hour: now.getHours(), minute: now.getMinutes() };
-}
-
-function isSlotOpen(slot: Slot): boolean {
-  const { hour, minute } = kstNowParts();
-  if (slot === "am") {
-    return hour > 7 || (hour === 7 && minute >= 30);
-  }
-  return hour > 21 || (hour === 21 && minute >= 30);
-}
-
-function defaultSlotByKstNow(): Slot {
-  return isSlotOpen("pm") ? "pm" : "am";
-}
+import FeedItemCard from "../components/feed-item-card";
+import { fetchTodayFeed, sendClickEvent, sendFeedback } from "../lib/api";
+import { defaultSlotByKstNow, isSlotOpen } from "../lib/slot";
+import { FeedGroup, FeedItem, FeedbackAction, Slot } from "../lib/types";
 
 function categoryLabel(key: string): string {
   const map: Record<string, string> = {
@@ -92,41 +24,15 @@ function categoryLabel(key: string): string {
   return map[key] ?? key;
 }
 
-function curationLabel(action?: CurationAction | null): string {
-  if (action === "saved") return "Saved";
-  if (action === "skipped") return "Skipped";
-  return "";
-}
-
-function preferenceLabel(action?: PreferenceAction | null): string {
-  if (action === "liked") return "Liked";
-  if (action === "disliked") return "Disliked";
-  return "";
-}
-
-function isCurationAction(action: FeedbackAction): action is CurationAction {
+function isCurationAction(action: FeedbackAction): action is "saved" | "skipped" {
   return action === "saved" || action === "skipped";
-}
-
-function sendClickEvent(itemId: number) {
-  void fetch(`${API_BASE}/events/click`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ item_id: itemId }),
-    keepalive: true
-  }).catch(() => undefined);
 }
 
 export default function HomePage() {
   const [slot, setSlot] = useState<Slot>(defaultSlotByKstNow());
-  const [feed, setFeed] = useState<FeedResponse | null>(null);
-  const [bookmarks, setBookmarks] = useState<BookmarkResponse["items"]>([]);
-  const [bookmarksPage, setBookmarksPage] = useState(1);
-  const [bookmarksPageSize] = useState(10);
-  const [bookmarksTotal, setBookmarksTotal] = useState(0);
-  const [bookmarksTotalPages, setBookmarksTotalPages] = useState(0);
+  const [feed, setFeed] = useState<{ generated_at: string; groups: FeedGroup[] } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState("");
   const [pendingMap, setPendingMap] = useState<Record<string, boolean>>({});
   const amOpen = isSlotOpen("am");
   const pmOpen = isSlotOpen("pm");
@@ -135,13 +41,6 @@ export default function HomePage() {
     if (!feed?.generated_at) return "-";
     return new Date(feed.generated_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
   }, [feed?.generated_at]);
-
-  const groups = useMemo<FeedGroup[]>(() => {
-    if (!feed) return [];
-    if (feed.groups && feed.groups.length > 0) return feed.groups;
-    if (feed.items && feed.items.length > 0) return [{ category: "general", items: feed.items }];
-    return [];
-  }, [feed]);
 
   const loadFeed = async (targetSlot: Slot) => {
     if (!isSlotOpen(targetSlot)) {
@@ -153,83 +52,51 @@ export default function HomePage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API_BASE}/feeds/today?slot=${targetSlot}`, { cache: "no-store" });
-      if (!res.ok) {
-        if (res.status === 404) {
-          setFeed(null);
-          setError("해당 슬롯 피드가 아직 생성되지 않았습니다.");
-          return;
-        }
-        throw new Error(`feed_error_${res.status}`);
-      }
-      const data: FeedResponse = await res.json();
-      setFeed(data);
+      const data = await fetchTodayFeed(targetSlot);
+      const groups =
+        data.groups && data.groups.length > 0
+          ? data.groups
+          : data.items && data.items.length > 0
+            ? [{ category: "general", items: data.items }]
+            : [];
+      setFeed({ generated_at: data.generated_at, groups });
     } catch (e) {
       setFeed(null);
-      setError(e instanceof Error ? e.message : "feed_load_failed");
+      const code = e instanceof Error ? e.message : "feed_load_failed";
+      if (code.includes("feed_error_404")) {
+        setError("해당 슬롯 피드가 아직 생성되지 않았습니다.");
+      } else {
+        setError(code);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const loadBookmarks = async (page: number) => {
-    try {
-      const res = await fetch(`${API_BASE}/bookmarks?page=${page}&size=${bookmarksPageSize}`, { cache: "no-store" });
-      if (!res.ok) return;
-      const data: BookmarkResponse = await res.json();
-      setBookmarks(data.items);
-      setBookmarksPage(data.page);
-      setBookmarksTotal(data.total);
-      setBookmarksTotalPages(data.total_pages);
-    } catch {
-      setBookmarks([]);
-      setBookmarksTotal(0);
-      setBookmarksTotalPages(0);
-    }
-  };
-
-  const sendFeedback = async (item: FeedItem, action: FeedbackAction) => {
+  const handleFeedback = async (item: FeedItem, action: FeedbackAction) => {
     const group = isCurationAction(action) ? "curation" : "preference";
     const pendingKey = `${item.item_id}:${group}`;
 
     const curationAction = item.curation_action ?? (item.saved ? "saved" : item.skipped ? "skipped" : null);
     const preferenceAction = item.preference_action ?? (item.liked ? "liked" : item.disliked ? "disliked" : null);
-
     if ((group === "curation" && curationAction) || (group === "preference" && preferenceAction) || pendingMap[pendingKey]) {
       return;
     }
 
     setPendingMap((prev) => ({ ...prev, [pendingKey]: true }));
-    const res = await fetch(`${API_BASE}/feedback`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ item_id: item.item_id, action })
-    });
-
-    if (!res.ok) {
-      setError(`feedback_error_${res.status}`);
+    try {
+      await sendFeedback(item.item_id, action);
+      await loadFeed(slot);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "feedback_error");
+    } finally {
       setPendingMap((prev) => ({ ...prev, [pendingKey]: false }));
-      return;
     }
-
-    await loadFeed(slot);
-    if (group === "curation" && action === "saved") {
-      setBookmarksPage(1);
-      await loadBookmarks(1);
-    } else if (group === "curation") {
-      await loadBookmarks(bookmarksPage);
-    }
-
-    setPendingMap((prev) => ({ ...prev, [pendingKey]: false }));
   };
 
   useEffect(() => {
     void loadFeed(slot);
   }, [slot]);
-
-  useEffect(() => {
-    void loadBookmarks(bookmarksPage);
-  }, [bookmarksPage]);
 
   return (
     <main>
@@ -240,8 +107,12 @@ export default function HomePage() {
         <div className="row">
           <strong>오늘 피드</strong>
           <div className="controls">
-            <button disabled={!amOpen} className={slot === "am" ? "soft" : ""} onClick={() => setSlot("am")}>AM</button>
-            <button disabled={!pmOpen} className={slot === "pm" ? "soft" : ""} onClick={() => setSlot("pm")}>PM</button>
+            <button disabled={!amOpen} className={slot === "am" ? "soft" : ""} onClick={() => setSlot("am")}>
+              AM
+            </button>
+            <button disabled={!pmOpen} className={slot === "pm" ? "soft" : ""} onClick={() => setSlot("pm")}>
+              PM
+            </button>
             <button onClick={() => void loadFeed(slot)}>새로고침</button>
           </div>
         </div>
@@ -249,119 +120,23 @@ export default function HomePage() {
         {loading && <p className="meta">불러오는 중...</p>}
         {error && <p className="error">{error}</p>}
 
-        {groups.map((group) => (
+        {feed?.groups.map((group) => (
           <section key={group.category} className="group">
             <h3 className="group-title">{categoryLabel(group.category)}</h3>
-            {group.items.map((item) => {
-              const curationAction = item.curation_action ?? (item.saved ? "saved" : item.skipped ? "skipped" : null);
-              const preferenceAction = item.preference_action ?? (item.liked ? "liked" : item.disliked ? "disliked" : null);
-              const curationDone = Boolean(curationAction);
-              const preferenceDone = Boolean(preferenceAction);
-              const curationPending = Boolean(pendingMap[`${item.item_id}:curation`]);
-              const preferencePending = Boolean(pendingMap[`${item.item_id}:preference`]);
-
-              const displayTitle = item.translated_title_ko?.trim() ? item.translated_title_ko : item.title;
-              const hasTranslatedTitle = Boolean(item.translated_title_ko && item.translated_title_ko !== item.title);
-
-              return (
-                <article className="item" key={item.item_id}>
-                  <div className="row">
-                    <strong>#{item.rank}</strong>
-                    <span className="meta">{item.source}</span>
-                  </div>
-                  <div>
-                    <a href={item.url} target="_blank" rel="noreferrer" onClick={() => sendClickEvent(item.item_id)}>
-                      {displayTitle}
-                    </a>
-                  </div>
-                  {hasTranslatedTitle && <div className="meta original-title">EN: {item.title}</div>}
-                  <div className="meta">{item.short_reason}</div>
-
-                  {(curationDone || preferenceDone) && (
-                    <div className="status">
-                      {curationAction && <span className={`badge ${curationAction}`}>{curationLabel(curationAction)}</span>}
-                      {preferenceAction && <span className={`badge ${preferenceAction}`}>{preferenceLabel(preferenceAction)}</span>}
-                    </div>
-                  )}
-
-                  <div className="action-grid">
-                    <div className="actions">
-                      <button
-                        className="primary"
-                        disabled={curationDone || curationPending}
-                        onClick={() => void sendFeedback(item, "saved")}
-                      >
-                        Save
-                      </button>
-                      <button
-                        className="warn"
-                        disabled={curationDone || curationPending}
-                        onClick={() => void sendFeedback(item, "skipped")}
-                      >
-                        Skip
-                      </button>
-                    </div>
-
-                    <div className="actions">
-                      <button
-                        className="like"
-                        disabled={preferenceDone || preferencePending}
-                        onClick={() => void sendFeedback(item, "liked")}
-                      >
-                        Like
-                      </button>
-                      <button
-                        className="dislike"
-                        disabled={preferenceDone || preferencePending}
-                        onClick={() => void sendFeedback(item, "disliked")}
-                      >
-                        Dislike
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+            {group.items.map((item) => (
+              <FeedItemCard
+                key={item.item_id}
+                item={item}
+                curationPending={Boolean(pendingMap[`${item.item_id}:curation`])}
+                preferencePending={Boolean(pendingMap[`${item.item_id}:preference`])}
+                onFeedback={handleFeedback}
+                onClickItem={sendClickEvent}
+              />
+            ))}
           </section>
         ))}
 
-        {!loading && !groups.length && <p className="meta">표시할 피드가 없습니다.</p>}
-      </section>
-
-      <section className="panel">
-        <div className="row">
-          <strong>북마크</strong>
-          <button onClick={() => void loadBookmarks(bookmarksPage)}>새로고침</button>
-        </div>
-        <div className="pager">
-          <button
-            onClick={() => setBookmarksPage((prev) => Math.max(1, prev - 1))}
-            disabled={bookmarksPage <= 1}
-          >
-            이전
-          </button>
-          <span className="meta">
-            {bookmarksTotalPages > 0 ? `${bookmarksPage} / ${bookmarksTotalPages}` : "0 / 0"} · Total {bookmarksTotal}
-          </span>
-          <button
-            onClick={() => setBookmarksPage((prev) => Math.min(bookmarksTotalPages || 1, prev + 1))}
-            disabled={bookmarksPage >= bookmarksTotalPages || bookmarksTotalPages === 0}
-          >
-            다음
-          </button>
-        </div>
-        {bookmarks.map((b) => (
-          <article className="item" key={b.item_id}>
-            <a href={b.url} target="_blank" rel="noreferrer">
-              {b.title}
-            </a>
-            <div className="meta">
-              {b.source}
-              {b.saved_at ? ` · Saved ${new Date(b.saved_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}` : ""}
-            </div>
-          </article>
-        ))}
-        {!bookmarks.length && <p className="meta">아직 저장한 항목이 없습니다.</p>}
+        {!loading && !(feed?.groups.length ?? 0) && <p className="meta">표시할 피드가 없습니다.</p>}
       </section>
     </main>
   );
