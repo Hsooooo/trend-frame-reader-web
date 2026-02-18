@@ -54,6 +54,14 @@ export default function FeedItemCard({
       {hasTranslatedTitle && <div className="meta original-title">EN: {item.title}</div>}
       <div className="meta">{item.short_reason}</div>
 
+      {item.keywords && item.keywords.length > 0 && (
+        <div className="keywords">
+          {item.keywords.slice(0, 5).map((kw) => (
+            <span key={kw} className="badge keyword">{kw}</span>
+          ))}
+        </div>
+      )}
+
       {(curationDone || preferenceDone) && (
         <div className="status">
           {curationAction && <span className={`badge ${curationAction}`}>{curationLabel(curationAction)}</span>}

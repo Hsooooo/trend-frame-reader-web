@@ -20,6 +20,7 @@ export type FeedItem = {
   curation_action?: CurationAction | null;
   preference_action?: PreferenceAction | null;
   feedback_action?: string | null;
+  keywords?: string[];
 };
 
 export type FeedGroup = {

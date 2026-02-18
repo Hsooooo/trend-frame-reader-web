@@ -264,6 +264,20 @@ a:hover {
   border: 1px solid #fca5a5;
 }
 
+.badge.keyword {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  font-weight: 500;
+}
+
+.keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
 .action-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
