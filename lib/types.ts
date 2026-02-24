@@ -78,3 +78,20 @@ export type KeywordSentimentsResponse = {
   total_keywords: number;
   keywords: KeywordSentimentItem[];
 };
+
+export type AskSource = {
+  item_id: number;
+  title: string;
+  url: string;
+  similarity: number;
+};
+
+export type AskResult = {
+  answer: string;
+  sources: AskSource[];
+};
+
+export type AskHistoryEntry = {
+  query: string;
+  result: AskResult;
+};

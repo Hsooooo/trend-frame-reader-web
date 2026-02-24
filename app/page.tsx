@@ -102,26 +102,46 @@ export default function HomePage() {
     <main>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <h1>Trend Frame Reader</h1>
-        <a
-          href="/graph"
-          style={{
-            fontSize: "0.82rem",
-            color: "#0f766e",
-            textDecoration: "none",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-            padding: "6px 12px",
-            border: "1.5px solid #5eead4",
-            borderRadius: 10,
-            background: "#ccfbf1",
-            fontWeight: 500,
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-          }}
-        >
-          그래프 보기 →
-        </a>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <a
+            href="/ask"
+            style={{
+              fontSize: "0.82rem",
+              color: "#0f766e",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "6px 12px",
+              border: "1.5px solid #5eead4",
+              borderRadius: 10,
+              background: "#ccfbf1",
+              fontWeight: 500,
+              whiteSpace: "nowrap"
+            }}
+          >
+            Q&amp;A →
+          </a>
+          <a
+            href="/graph"
+            style={{
+              fontSize: "0.82rem",
+              color: "#0f766e",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "6px 12px",
+              border: "1.5px solid #5eead4",
+              borderRadius: 10,
+              background: "#ccfbf1",
+              fontWeight: 500,
+              whiteSpace: "nowrap"
+            }}
+          >
+            그래프 보기 →
+          </a>
+        </div>
       </div>
       <p>Daily feed · Slot {slot.toUpperCase()} · Generated {generatedLabel}</p>
 

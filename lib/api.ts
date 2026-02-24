@@ -1,4 +1,5 @@
 import {
+  AskResult,
   BookmarkResponse,
   FeedbackAction,
   FeedResponse,
@@ -64,6 +65,19 @@ type KeywordSentimentParams = {
   limit?: number;
   adminToken?: string;
 };
+
+export async function askBookmarks(query: string, topK = 5): Promise<AskResult> {
+  const res = await fetch(`${API_BASE}/bookmarks/ask`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, top_k: topK }),
+    cache: "no-store"
+  });
+  if (!res.ok) {
+    throw new Error(await toErrorCode(res, "ask_error"));
+  }
+  return (await res.json()) as AskResult;
+}
 
 export async function fetchKeywordSentiments(params: KeywordSentimentParams): Promise<KeywordSentimentsResponse> {
   const token = params.adminToken ?? PUBLIC_ADMIN_TOKEN;
