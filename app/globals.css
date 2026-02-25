@@ -422,21 +422,27 @@ a:hover {
   }
 
   .top-nav {
+    flex-direction: column;
     align-items: stretch;
+    gap: 10px;
   }
 
   .top-nav-auth {
     order: -1;
     margin-left: 0;
+    width: 100%;
     display: flex;
     justify-content: flex-end;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eaecf0;
   }
 
   .top-nav-auth-name {
-    max-width: 130px;
+    max-width: 150px;
   }
 
   .top-nav-links {
+    width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 2px;
