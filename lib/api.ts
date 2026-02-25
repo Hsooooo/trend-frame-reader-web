@@ -7,10 +7,12 @@ import {
   KeywordSentimentsResponse,
   Slot,
   TimelineResponse,
+  User,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-const PUBLIC_ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN ?? "";
+
+const DEFAULT_OPTS: RequestInit = { credentials: "include" };
 
 async function toErrorCode(res: Response, defaultCode: string): Promise<string> {
   try {
@@ -24,8 +26,22 @@ async function toErrorCode(res: Response, defaultCode: string): Promise<string> 
   return `${defaultCode}_${res.status}`;
 }
 
+export async function fetchMe(): Promise<User | null> {
+  try {
+    const res = await fetch(`${API_BASE}/auth/me`, { ...DEFAULT_OPTS, cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as User | null;
+  } catch {
+    return null;
+  }
+}
+
+export async function logout(): Promise<void> {
+  await fetch(`${API_BASE}/auth/logout`, { ...DEFAULT_OPTS, method: "POST" });
+}
+
 export async function fetchTodayFeed(slot: Slot): Promise<FeedResponse> {
-  const res = await fetch(`${API_BASE}/feeds/today?slot=${slot}`, { cache: "no-store" });
+  const res = await fetch(`${API_BASE}/feeds/today?slot=${slot}`, { ...DEFAULT_OPTS, cache: "no-store" });
   if (!res.ok) {
     throw new Error(await toErrorCode(res, "feed_error"));
   }
@@ -33,7 +49,7 @@ export async function fetchTodayFeed(slot: Slot): Promise<FeedResponse> {
 }
 
 export async function fetchBookmarks(page: number, size: number): Promise<BookmarkResponse> {
-  const res = await fetch(`${API_BASE}/bookmarks?page=${page}&size=${size}`, { cache: "no-store" });
+  const res = await fetch(`${API_BASE}/bookmarks?page=${page}&size=${size}`, { ...DEFAULT_OPTS, cache: "no-store" });
   if (!res.ok) {
     throw new Error(await toErrorCode(res, "bookmarks_error"));
   }
@@ -42,6 +58,7 @@ export async function fetchBookmarks(page: number, size: number): Promise<Bookma
 
 export async function sendFeedback(itemId: number, action: FeedbackAction): Promise<void> {
   const res = await fetch(`${API_BASE}/feedback`, {
+    ...DEFAULT_OPTS,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ item_id: itemId, action })
@@ -53,6 +70,7 @@ export async function sendFeedback(itemId: number, action: FeedbackAction): Prom
 
 export function sendClickEvent(itemId: number) {
   void fetch(`${API_BASE}/events/click`, {
+    ...DEFAULT_OPTS,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ item_id: itemId }),
@@ -65,11 +83,11 @@ type KeywordSentimentParams = {
   dateTo?: string;
   minFeedback?: number;
   limit?: number;
-  adminToken?: string;
 };
 
 export async function askBookmarks(query: string, topK = 5): Promise<AskResult> {
   const res = await fetch(`${API_BASE}/bookmarks/ask`, {
+    ...DEFAULT_OPTS,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query, top_k: topK }),
@@ -82,11 +100,6 @@ export async function askBookmarks(query: string, topK = 5): Promise<AskResult> 
 }
 
 export async function fetchKeywordSentiments(params: KeywordSentimentParams): Promise<KeywordSentimentsResponse> {
-  const token = params.adminToken ?? PUBLIC_ADMIN_TOKEN;
-  if (!token) {
-    throw new Error("admin_token_missing");
-  }
-
   const qs = new URLSearchParams();
   if (params.dateFrom) qs.set("date_from", params.dateFrom);
   if (params.dateTo) qs.set("date_to", params.dateTo);
@@ -94,10 +107,8 @@ export async function fetchKeywordSentiments(params: KeywordSentimentParams): Pr
   if (typeof params.limit === "number") qs.set("limit", String(params.limit));
 
   const res = await fetch(`${API_BASE}/admin/keyword-sentiments?${qs.toString()}`, {
+    ...DEFAULT_OPTS,
     cache: "no-store",
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
   });
   if (!res.ok) {
     throw new Error(await toErrorCode(res, "keyword_sentiments_error"));
@@ -115,7 +126,7 @@ export async function fetchFullGraph(
   if (options?.maxArticlesPerKeyword) qs.set("max_articles_per_keyword", String(options.maxArticlesPerKeyword));
   const res = await fetch(
     `${API_BASE}/bookmarks/graph?${qs.toString()}`,
-    { cache: "no-store" }
+    { ...DEFAULT_OPTS, cache: "no-store" }
   );
   if (!res.ok) {
     throw new Error(await toErrorCode(res, "graph_error"));
@@ -126,7 +137,7 @@ export async function fetchFullGraph(
 export async function fetchTimeline(days = 30): Promise<TimelineResponse> {
   const res = await fetch(
     `${API_BASE}/bookmarks/timeline?days=${days}`,
-    { cache: "no-store" }
+    { ...DEFAULT_OPTS, cache: "no-store" }
   );
   if (!res.ok) {
     throw new Error(await toErrorCode(res, "timeline_error"));

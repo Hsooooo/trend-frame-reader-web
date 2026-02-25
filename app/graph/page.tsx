@@ -6,6 +6,7 @@ import GraphView from "./components/graph-view";
 import TimelineView from "./components/timeline-view";
 import { fetchFullGraph, fetchTimeline } from "../../lib/api";
 import type { FullGraphResponse, TimelineResponse } from "../../lib/types";
+import { useAuth } from "../context/auth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -21,6 +22,7 @@ type KeywordCloudResponse = {
 };
 
 export default function GraphPage() {
+  const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("graph");
 
   // Keyword cloud
@@ -82,9 +84,10 @@ export default function GraphPage() {
   // ── Initial load: keyword cloud ─────────────────────────────────────────────
 
   useEffect(() => {
+    if (authLoading || !user) return;
     void (async () => {
       try {
-        const res = await fetch(`${API_BASE}/bookmarks/keywords?limit=30`, { cache: "no-store" });
+        const res = await fetch(`${API_BASE}/bookmarks/keywords?limit=30`, { cache: "no-store", credentials: "include" });
         if (!res.ok) throw new Error(`keywords_error_${res.status}`);
         const data: KeywordCloudResponse = await res.json();
         setCloud(data.keywords);
@@ -96,7 +99,7 @@ export default function GraphPage() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading, user]);
 
   // ── Tab change handler ──────────────────────────────────────────────────────
 
@@ -135,6 +138,23 @@ export default function GraphPage() {
   const loading = activeTab === "graph" ? graphLoading : timelineLoading;
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  if (!authLoading && !user) {
+    return (
+      <main style={{ maxWidth: 900, margin: "0 auto", padding: "16px" }}>
+        <h1>키워드 그래프</h1>
+        <section className="panel">
+          <p className="meta">
+            그래프를 보려면{" "}
+            <a href={`${API_BASE}/auth/google/login`} style={{ color: "#0f766e" }}>
+              Google로 로그인
+            </a>
+            하세요.
+          </p>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "16px" }}>

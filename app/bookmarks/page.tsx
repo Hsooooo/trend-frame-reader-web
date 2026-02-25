@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { fetchBookmarks } from "../../lib/api";
 import { BookmarkItem } from "../../lib/types";
+import { useAuth } from "../context/auth";
 
 const PAGE_SIZE = 10;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 export default function BookmarksPage() {
+  const { user, loading: authLoading } = useAuth();
   const [items, setItems] = useState<BookmarkItem[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -34,8 +37,27 @@ export default function BookmarksPage() {
   };
 
   useEffect(() => {
-    void load(page);
-  }, [page]);
+    if (!authLoading && user) {
+      void load(page);
+    }
+  }, [page, authLoading, user]);
+
+  if (!authLoading && !user) {
+    return (
+      <main>
+        <h1>Bookmarks</h1>
+        <section className="panel">
+          <p className="meta">
+            북마크를 보려면{" "}
+            <a href={`${API_BASE}/auth/google/login`} style={{ color: "#0f766e" }}>
+              Google로 로그인
+            </a>
+            하세요.
+          </p>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main>

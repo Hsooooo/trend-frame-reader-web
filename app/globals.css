@@ -54,6 +54,11 @@ p {
   padding: 10px 16px;
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.top-nav-auth {
+  margin-left: auto;
 }
 
 .top-nav-link {

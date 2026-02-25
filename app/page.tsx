@@ -5,6 +5,7 @@ import FeedItemCard from "../components/feed-item-card";
 import { fetchTodayFeed, sendClickEvent, sendFeedback } from "../lib/api";
 import { defaultSlotByKstNow, isSlotOpen } from "../lib/slot";
 import { FeedGroup, FeedItem, FeedbackAction, Slot } from "../lib/types";
+import { useAuth } from "./context/auth";
 
 function categoryLabel(key: string): string {
   const map: Record<string, string> = {
@@ -28,7 +29,10 @@ function isCurationAction(action: FeedbackAction): action is "saved" | "skipped"
   return action === "saved" || action === "skipped";
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
 export default function HomePage() {
+  const { user } = useAuth();
   const [slot, setSlot] = useState<Slot>(defaultSlotByKstNow());
   const [feed, setFeed] = useState<{ generated_at: string; groups: FeedGroup[] } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -74,6 +78,11 @@ export default function HomePage() {
   };
 
   const handleFeedback = async (item: FeedItem, action: FeedbackAction) => {
+    if (!user) {
+      window.location.href = `${API_BASE}/auth/google/login?redirect_to=${encodeURIComponent(window.location.href)}`;
+      return;
+    }
+
     const group = isCurationAction(action) ? "curation" : "preference";
     const pendingKey = `${item.item_id}:${group}`;
 

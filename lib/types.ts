@@ -129,6 +129,16 @@ export type FullGraphResponse = {
   edges: GraphEdge[];
 };
 
+// ── Auth types ────────────────────────────────────────────────────────────────
+
+export type User = {
+  id: number;
+  email: string;
+  name: string;
+  picture?: string | null;
+  is_owner: boolean;
+};
+
 // ── Timeline types ────────────────────────────────────────────────────────────
 
 export type TimelineArticle = {

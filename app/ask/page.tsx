@@ -3,6 +3,9 @@
 import { useRef, useState } from "react";
 import { askBookmarks } from "../../lib/api";
 import { AskHistoryEntry, AskResult } from "../../lib/types";
+import { useAuth } from "../context/auth";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 const SUGGESTED = [
   "최근 AI 관련 뉴스 요약해줘",
@@ -127,6 +130,7 @@ function AnswerBlock({ query, result }: { query: string; result: AskResult }) {
 }
 
 export default function AskPage() {
+  const { user, loading: authLoading } = useAuth();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AskResult | null>(null);
@@ -176,6 +180,23 @@ export default function AskPage() {
   const handleSuggest = (q: string) => {
     setQuery(q);
   };
+
+  if (!authLoading && !user) {
+    return (
+      <main style={{ maxWidth: 760, margin: "0 auto", padding: "16px" }}>
+        <h1>북마크 Q&amp;A</h1>
+        <section className="panel">
+          <p className="meta">
+            Q&A를 사용하려면{" "}
+            <a href={`${API_BASE}/auth/google/login`} style={{ color: "#0f766e" }}>
+              Google로 로그인
+            </a>
+            하세요.
+          </p>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main style={{ maxWidth: 760, margin: "0 auto", padding: "16px" }}>

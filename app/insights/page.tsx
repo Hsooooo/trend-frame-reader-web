@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { fetchKeywordSentiments } from "../../lib/api";
 import { KeywordSentimentItem, KeywordSentimentsResponse, SentimentLabel } from "../../lib/types";
+import { useAuth } from "../context/auth";
 
 const SENTIMENT_LABEL: Record<string, string> = {
   very_positive: "Very Positive",
@@ -42,7 +43,10 @@ function sentimentClass(label: string): string {
   return "tone-neutral";
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
 export default function InsightsPage() {
+  const { user, loading: authLoading } = useAuth();
   const initial = initialDateRange();
   const [dateFrom, setDateFrom] = useState(initial.from);
   const [dateTo, setDateTo] = useState(initial.to);
@@ -62,12 +66,7 @@ export default function InsightsPage() {
       });
       setResult(data);
     } catch (e) {
-      const code = e instanceof Error ? e.message : "keyword_sentiments_load_failed";
-      if (code === "admin_token_missing") {
-        setError("NEXT_PUBLIC_ADMIN_TOKEN이 설정되지 않았습니다.");
-      } else {
-        setError(code);
-      }
+      setError(e instanceof Error ? e.message : "keyword_sentiments_load_failed");
       setResult(null);
     } finally {
       setLoading(false);
@@ -80,13 +79,32 @@ export default function InsightsPage() {
   };
 
   useEffect(() => {
-    void load(dateFrom, dateTo);
-  }, []);
+    if (!authLoading && user) {
+      void load(dateFrom, dateTo);
+    }
+  }, [authLoading, user]);
+
+  if (!authLoading && !user) {
+    return (
+      <main>
+        <h1>Insights</h1>
+        <section className="panel">
+          <p className="meta">
+            Insights를 보려면{" "}
+            <a href={`${API_BASE}/auth/google/login`} style={{ color: "#0f766e" }}>
+              Google로 로그인
+            </a>
+            하세요.
+          </p>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main>
       <h1>Insights</h1>
-      <p>키워드 감성 점수(운영자 liked/disliked 기반)</p>
+      <p>키워드 감성 점수(liked/disliked 기반)</p>
 
       <section className="panel">
         <form className="insights-filter" onSubmit={onSubmit}>
