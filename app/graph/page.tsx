@@ -55,7 +55,7 @@ export default function GraphPage() {
     try {
       const graphOptions = isMobile
         ? { maxKeywordNodes: 15, maxArticlesPerKeyword: 2 }
-        : undefined;
+        : { maxKeywordNodes: 30, maxArticlesPerKeyword: 5 };
       const data = await fetchFullGraph(keyword.trim(), 1, graphOptions);
       setGraphData(data);
       setActiveKeyword(keyword.trim());
