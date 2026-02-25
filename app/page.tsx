@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Script from "next/script";
 import FeedItemCard from "../components/feed-item-card";
 import { fetchTodayFeed, sendClickEvent, sendFeedback } from "../lib/api";
 import { defaultSlotByKstNow, isSlotOpen } from "../lib/slot";
@@ -108,6 +109,13 @@ export default function HomePage() {
   }, [slot]);
 
   return (
+    <>
+    <Script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2057329897151119"
+      crossOrigin="anonymous"
+      strategy="afterInteractive"
+    />
     <main>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <h1>Trend Frame Reader</h1>
@@ -190,5 +198,6 @@ export default function HomePage() {
         {!loading && !(feed?.groups.length ?? 0) && <p className="meta">표시할 피드가 없습니다.</p>}
       </section>
     </main>
+    </>
   );
 }
