@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import GlobalNav from "../components/global-nav";
+import SiteFooter from "../components/site-footer";
 import { AuthProvider } from "./context/auth";
 import "./globals.css";
 
@@ -19,6 +20,7 @@ export default function RootLayout({
         <AuthProvider>
           <GlobalNav />
           {children}
+          <SiteFooter />
         </AuthProvider>
       </body>
     </html>
