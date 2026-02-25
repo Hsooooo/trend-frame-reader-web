@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { askBookmarks } from "../../lib/api";
 import { AskHistoryEntry, AskResult } from "../../lib/types";
 import { useAuth } from "../context/auth";
@@ -40,12 +41,9 @@ function AnswerBlock({ query, result }: { query: string; result: AskResult }) {
         <div style={{ fontSize: "0.78rem", color: "var(--accent)", fontWeight: 600, marginBottom: 8, letterSpacing: "0.01em" }}>
           답변
         </div>
-        <p
-          style={{ color: "var(--text)", fontSize: "0.95rem", lineHeight: 1.7, whiteSpace: "pre-wrap", margin: 0 }}
-          dangerouslySetInnerHTML={{
-            __html: result.answer.replace(/\n/g, "<br />")
-          }}
-        />
+        <div style={{ color: "var(--text)", fontSize: "0.95rem", lineHeight: 1.7 }} className="markdown-body">
+          <ReactMarkdown>{result.answer}</ReactMarkdown>
+        </div>
 
         {/* Sources */}
         <div style={{ marginTop: 16, borderTop: "1px solid var(--line)", paddingTop: 12 }}>
