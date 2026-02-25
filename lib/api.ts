@@ -3,8 +3,10 @@ import {
   BookmarkResponse,
   FeedbackAction,
   FeedResponse,
+  FullGraphResponse,
   KeywordSentimentsResponse,
-  Slot
+  Slot,
+  TimelineResponse,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
@@ -101,4 +103,26 @@ export async function fetchKeywordSentiments(params: KeywordSentimentParams): Pr
     throw new Error(await toErrorCode(res, "keyword_sentiments_error"));
   }
   return (await res.json()) as KeywordSentimentsResponse;
+}
+
+export async function fetchFullGraph(keyword: string, depth = 1): Promise<FullGraphResponse> {
+  const res = await fetch(
+    `${API_BASE}/bookmarks/graph?keyword=${encodeURIComponent(keyword)}&depth=${depth}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) {
+    throw new Error(await toErrorCode(res, "graph_error"));
+  }
+  return (await res.json()) as FullGraphResponse;
+}
+
+export async function fetchTimeline(days = 30): Promise<TimelineResponse> {
+  const res = await fetch(
+    `${API_BASE}/bookmarks/timeline?days=${days}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) {
+    throw new Error(await toErrorCode(res, "timeline_error"));
+  }
+  return (await res.json()) as TimelineResponse;
 }

@@ -95,3 +95,52 @@ export type AskHistoryEntry = {
   query: string;
   result: AskResult;
 };
+
+// ── Full Graph types ──────────────────────────────────────────────────────────
+
+export type FullGraphKeywordNode = {
+  id: string;
+  keyword: string;
+  doc_frequency: number;
+  bookmark_frequency: number;
+  sentiment_score: number;
+};
+
+export type FullGraphArticleNode = {
+  id: string;
+  item_id: number;
+  title: string;
+  url: string;
+  source?: string | null;
+  saved_at?: string | null;
+  keywords: string[];
+};
+
+export type GraphEdge = {
+  source: string;
+  target: string;
+  type: "cooccurrence" | "has_keyword";
+  weight: number;
+};
+
+export type FullGraphResponse = {
+  keyword_nodes: FullGraphKeywordNode[];
+  article_nodes: FullGraphArticleNode[];
+  edges: GraphEdge[];
+};
+
+// ── Timeline types ────────────────────────────────────────────────────────────
+
+export type TimelineArticle = {
+  item_id: number;
+  title: string;
+  url: string;
+  source?: string | null;
+  saved_at: string;
+  keywords: string[];
+  sentiment?: string | null;
+};
+
+export type TimelineResponse = {
+  articles: TimelineArticle[];
+};
