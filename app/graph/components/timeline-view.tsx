@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import * as d3 from "d3";
-import type { TimelineResponse } from "@/lib/types";
+import type { TimelineResponse } from "../../../lib/types";
 
 type TimelineViewProps = {
   data: TimelineResponse;

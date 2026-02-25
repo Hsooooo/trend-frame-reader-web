@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import TabBar, { type Tab } from "./components/tab-bar";
 import GraphView from "./components/graph-view";
 import TimelineView from "./components/timeline-view";
-import { fetchFullGraph, fetchTimeline } from "@/lib/api";
-import type { FullGraphResponse, TimelineResponse } from "@/lib/types";
+import { fetchFullGraph, fetchTimeline } from "../../lib/api";
+import type { FullGraphResponse, TimelineResponse } from "../../lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
