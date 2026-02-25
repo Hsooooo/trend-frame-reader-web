@@ -38,6 +38,12 @@ export default function GraphPage() {
 
   const [error, setError] = useState("");
 
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    setIsMobile(window.matchMedia("(max-width: 768px)").matches);
+  }, []);
+
   // ── Load graph ──────────────────────────────────────────────────────────────
 
   const loadGraph = useCallback(async (keyword: string) => {
@@ -45,7 +51,10 @@ export default function GraphPage() {
     setGraphLoading(true);
     setError("");
     try {
-      const data = await fetchFullGraph(keyword.trim());
+      const graphOptions = isMobile
+        ? { maxKeywordNodes: 15, maxArticlesPerKeyword: 2 }
+        : undefined;
+      const data = await fetchFullGraph(keyword.trim(), 1, graphOptions);
       setGraphData(data);
       setActiveKeyword(keyword.trim());
     } catch (e) {
@@ -53,7 +62,7 @@ export default function GraphPage() {
     } finally {
       setGraphLoading(false);
     }
-  }, []);
+  }, [isMobile]);
 
   // ── Load timeline ───────────────────────────────────────────────────────────
 
@@ -273,7 +282,7 @@ export default function GraphPage() {
         {activeTab === "graph" && (
           <>
             {graphData ? (
-              <GraphView data={graphData} onKeywordClick={handleKeywordClick} />
+              <GraphView data={graphData} onKeywordClick={handleKeywordClick} isMobile={isMobile} />
             ) : (
               !graphLoading && !error && (
                 <div
@@ -297,6 +306,11 @@ export default function GraphPage() {
             {graphData && (
               <p style={{ margin: "10px 0 0", fontSize: "0.78rem", color: "#94a3b8", textAlign: "center" }}>
                 노드를 드래그하거나 클릭해서 탐색하세요
+              </p>
+            )}
+            {graphData && isMobile && (
+              <p style={{ margin: "6px 0 0", fontSize: "0.78rem", color: "#94a3b8", textAlign: "center" }}>
+                모바일 최적화 모드 · 상위 15개 키워드
               </p>
             )}
           </>

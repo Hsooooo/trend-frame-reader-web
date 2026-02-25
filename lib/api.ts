@@ -105,9 +105,16 @@ export async function fetchKeywordSentiments(params: KeywordSentimentParams): Pr
   return (await res.json()) as KeywordSentimentsResponse;
 }
 
-export async function fetchFullGraph(keyword: string, depth = 1): Promise<FullGraphResponse> {
+export async function fetchFullGraph(
+  keyword: string,
+  depth = 1,
+  options?: { maxKeywordNodes?: number; maxArticlesPerKeyword?: number }
+): Promise<FullGraphResponse> {
+  const qs = new URLSearchParams({ keyword, depth: String(depth) });
+  if (options?.maxKeywordNodes) qs.set("max_keyword_nodes", String(options.maxKeywordNodes));
+  if (options?.maxArticlesPerKeyword) qs.set("max_articles_per_keyword", String(options.maxArticlesPerKeyword));
   const res = await fetch(
-    `${API_BASE}/bookmarks/graph?keyword=${encodeURIComponent(keyword)}&depth=${depth}`,
+    `${API_BASE}/bookmarks/graph?${qs.toString()}`,
     { cache: "no-store" }
   );
   if (!res.ok) {

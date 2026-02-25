@@ -7,6 +7,7 @@ import type { FullGraphResponse } from "../../../lib/types";
 type GraphViewProps = {
   data: FullGraphResponse;
   onKeywordClick: (keyword: string) => void;
+  isMobile?: boolean;
 };
 
 // ── Node types ──────────────────────────────────────────────────────────────
@@ -52,8 +53,9 @@ function truncate(text: string, max: number): string {
 
 // ── Component ───────────────────────────────────────────────────────────────
 
-export default function GraphView({ data, onKeywordClick }: GraphViewProps) {
+export default function GraphView({ data, onKeywordClick, isMobile }: GraphViewProps) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -128,6 +130,24 @@ export default function GraphView({ data, onKeywordClick }: GraphViewProps) {
       .attr("stdDeviation", 3)
       .attr("flood-color", "rgba(0,0,0,0.1)");
 
+    // Zoom container
+    const zoomContainer = svgSel.append("g").attr("class", "zoom-container");
+
+    // Zoom/Pan (desktop only)
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.2, 4])
+      .on("zoom", (event) => {
+        zoomContainer.attr("transform", event.transform as string);
+      });
+
+    zoomRef.current = zoom;
+
+    if (!isMobile) {
+      svgSel.call(zoom);
+    } else {
+      svgSel.on(".zoom", null);
+    }
+
     // Simulation
     const simulation = d3
       .forceSimulation<GraphNode>(nodes)
@@ -155,7 +175,7 @@ export default function GraphView({ data, onKeywordClick }: GraphViewProps) {
       .style("opacity", 0);
 
     // Edges
-    const linkEls = svgSel
+    const linkEls = zoomContainer
       .append("g")
       .selectAll<SVGLineElement, GraphLink>("line")
       .data(links)
@@ -169,7 +189,7 @@ export default function GraphView({ data, onKeywordClick }: GraphViewProps) {
       .attr("stroke-linecap", "round");
 
     // Node groups
-    const nodeEls = svgSel
+    const nodeEls = zoomContainer
       .append("g")
       .selectAll<SVGGElement, GraphNode>("g")
       .data(nodes)
@@ -267,7 +287,7 @@ export default function GraphView({ data, onKeywordClick }: GraphViewProps) {
       simulation.stop();
       tooltip.remove();
     };
-  }, [data, onKeywordClick]);
+  }, [data, onKeywordClick, isMobile]);
 
   return (
     <div
@@ -282,6 +302,51 @@ export default function GraphView({ data, onKeywordClick }: GraphViewProps) {
       }}
     >
       <svg ref={svgRef} style={{ width: "100%", height: "100%", display: "block" }} />
+
+      {/* Zoom controls (desktop) */}
+      {!isMobile && (
+        <div
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 12,
+            display: "flex",
+            gap: 4,
+          }}
+        >
+          {(["zoomIn", "zoomOut", "reset"] as const).map((action) => (
+            <button
+              key={action}
+              onClick={() => {
+                const svgEl = svgRef.current;
+                const zoom = zoomRef.current;
+                if (!svgEl || !zoom) return;
+                const sel = d3.select<SVGSVGElement, unknown>(svgEl);
+                if (action === "zoomIn") sel.transition().duration(300).call(zoom.scaleBy, 1.3);
+                else if (action === "zoomOut") sel.transition().duration(300).call(zoom.scaleBy, 0.77);
+                else sel.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
+              }}
+              style={{
+                width: 28,
+                height: 28,
+                border: "1px solid #e2e8f0",
+                borderRadius: 6,
+                background: "rgba(255,255,255,0.9)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.85rem",
+                color: "#475467",
+                padding: 0,
+              }}
+              title={action === "zoomIn" ? "확대" : action === "zoomOut" ? "축소" : "초기화"}
+            >
+              {action === "zoomIn" ? "+" : action === "zoomOut" ? "−" : "⊙"}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Legend */}
       <div
