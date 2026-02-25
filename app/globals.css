@@ -53,12 +53,75 @@ p {
   margin: 0 auto;
   padding: 10px 16px;
   display: flex;
-  gap: 8px;
   align-items: center;
+  gap: 8px;
+}
+
+.top-nav-links {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
 }
 
 .top-nav-auth {
   margin-left: auto;
+  min-width: 0;
+}
+
+.top-nav-auth-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.top-nav-auth-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.top-nav-auth-name {
+  font-size: 0.85rem;
+  color: #374151;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-nav-auth-logout {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.top-nav-auth-login {
+  font-size: 0.82rem;
+  padding: 5px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #374151;
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.top-nav-auth-login:hover {
+  text-decoration: none;
+  background: #fff;
 }
 
 .top-nav-link {
@@ -70,6 +133,7 @@ p {
   font-size: 0.92rem;
   font-weight: 600;
   background: #fff;
+  white-space: nowrap;
 }
 
 .top-nav-link.active {
@@ -358,8 +422,28 @@ a:hover {
   }
 
   .top-nav {
+    align-items: stretch;
+  }
+
+  .top-nav-auth {
+    order: -1;
+    margin-left: 0;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .top-nav-auth-name {
+    max-width: 130px;
+  }
+
+  .top-nav-links {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+
+  .top-nav-link {
+    flex: 0 0 auto;
   }
 }
 

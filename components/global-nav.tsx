@@ -26,39 +26,33 @@ export default function GlobalNav() {
   return (
     <header className="top-nav-wrap">
       <nav className="top-nav" aria-label="Main navigation">
-        {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href;
-          return (
-            <Link key={item.href} href={item.href} className={active ? "top-nav-link active" : "top-nav-link"}>
-              {item.label}
-            </Link>
-          );
-        })}
+        <div className="top-nav-links">
+          {NAV_ITEMS.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link key={item.href} href={item.href} className={active ? "top-nav-link active" : "top-nav-link"}>
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
 
         <div className="top-nav-auth">
           {!loading && (
             user ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="top-nav-auth-user">
                 {user.picture && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={user.picture}
                     alt={user.name}
-                    style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }}
+                    className="top-nav-auth-avatar"
                   />
                 )}
-                <span style={{ fontSize: "0.85rem", color: "#374151" }}>{user.name}</span>
+                <span className="top-nav-auth-name" title={user.name}>{user.name}</span>
                 <button
                   onClick={() => void handleLogout()}
-                  style={{
-                    fontSize: "0.8rem",
-                    padding: "4px 10px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: 6,
-                    background: "transparent",
-                    cursor: "pointer",
-                    color: "#6b7280",
-                  }}
+                  className="top-nav-auth-logout"
                 >
                   로그아웃
                 </button>
@@ -66,19 +60,7 @@ export default function GlobalNav() {
             ) : (
               <a
                 href={`${API_BASE}/auth/google/login`}
-                style={{
-                  fontSize: "0.82rem",
-                  padding: "5px 12px",
-                  border: "1.5px solid #d1d5db",
-                  borderRadius: 8,
-                  background: "#f9fafb",
-                  color: "#374151",
-                  textDecoration: "none",
-                  fontWeight: 500,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
+                className="top-nav-auth-login"
               >
                 Google로 로그인
               </a>
