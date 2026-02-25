@@ -154,3 +154,38 @@ export type TimelineArticle = {
 export type TimelineResponse = {
   articles: TimelineArticle[];
 };
+
+// ── Insight Post types ────────────────────────────────────────────────────────
+
+export type InsightPost = {
+  slug: string;
+  title: string;
+  summary?: string | null;
+  body?: string | null;
+  period_start: string;
+  period_end: string;
+  published_at?: string | null;
+};
+
+export type InsightPostAdmin = {
+  id: number;
+  slug: string;
+  title: string;
+  summary?: string | null;
+  body?: string | null;
+  status: "draft" | "published";
+  period_start: string;
+  period_end: string;
+  created_at: string;
+  published_at?: string | null;
+};
+
+export type InsightListResponse = {
+  total: number;
+  posts: InsightPost[];
+};
+
+export type InsightAdminListResponse = {
+  total: number;
+  posts: InsightPostAdmin[];
+};

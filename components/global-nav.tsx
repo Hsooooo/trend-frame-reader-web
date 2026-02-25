@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Feed" },
   { href: "/bookmarks", label: "Bookmarks" },
   { href: "/ask", label: "Q&A" },
+  { href: "/posts", label: "Posts" },
   { href: "/insights", label: "Insights" }
 ];
 
@@ -28,7 +29,7 @@ export default function GlobalNav() {
       <nav className="top-nav" aria-label="Main navigation">
         <div className="top-nav-links">
           {NAV_ITEMS.map((item) => {
-            const active = pathname === item.href;
+            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             return (
               <Link key={item.href} href={item.href} className={active ? "top-nav-link active" : "top-nav-link"}>
                 {item.label}

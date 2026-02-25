@@ -4,6 +4,10 @@ import {
   FeedbackAction,
   FeedResponse,
   FullGraphResponse,
+  InsightAdminListResponse,
+  InsightListResponse,
+  InsightPost,
+  InsightPostAdmin,
   KeywordSentimentsResponse,
   Slot,
   TimelineResponse,
@@ -143,4 +147,76 @@ export async function fetchTimeline(days = 30): Promise<TimelineResponse> {
     throw new Error(await toErrorCode(res, "timeline_error"));
   }
   return (await res.json()) as TimelineResponse;
+}
+
+// ── Insight Posts (Public) ──────────────────────────────────────────────────
+
+export async function fetchInsightPosts(limit = 20, offset = 0): Promise<InsightListResponse> {
+  const res = await fetch(`${API_BASE}/insights/posts?limit=${limit}&offset=${offset}`, {
+    cache: "no-store"
+  });
+  if (!res.ok) throw new Error(await toErrorCode(res, "insights_error"));
+  return (await res.json()) as InsightListResponse;
+}
+
+export async function fetchInsightPost(slug: string): Promise<InsightPost> {
+  const res = await fetch(`${API_BASE}/insights/posts/${encodeURIComponent(slug)}`, {
+    cache: "no-store"
+  });
+  if (!res.ok) throw new Error(await toErrorCode(res, "insight_error"));
+  return (await res.json()) as InsightPost;
+}
+
+// ── Insight Posts (Admin, cookie auth) ─────────────────────────────────────
+
+export async function fetchAdminInsightPosts(): Promise<InsightAdminListResponse> {
+  const res = await fetch(`${API_BASE}/admin/insights/posts`, {
+    ...DEFAULT_OPTS,
+    cache: "no-store"
+  });
+  if (!res.ok) throw new Error(await toErrorCode(res, "admin_insights_error"));
+  return (await res.json()) as InsightAdminListResponse;
+}
+
+export async function createInsightDraft(days = 7): Promise<InsightPostAdmin> {
+  const res = await fetch(`${API_BASE}/admin/insights/draft`, {
+    ...DEFAULT_OPTS,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ days })
+  });
+  if (!res.ok) throw new Error(await toErrorCode(res, "draft_create_error"));
+  return (await res.json()) as InsightPostAdmin;
+}
+
+export async function patchInsightPost(
+  id: number,
+  patch: { title?: string; summary?: string; body?: string }
+): Promise<InsightPostAdmin> {
+  const res = await fetch(`${API_BASE}/admin/insights/posts/${id}`, {
+    ...DEFAULT_OPTS,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch)
+  });
+  if (!res.ok) throw new Error(await toErrorCode(res, "patch_error"));
+  return (await res.json()) as InsightPostAdmin;
+}
+
+export async function publishInsightPost(id: number): Promise<InsightPostAdmin> {
+  const res = await fetch(`${API_BASE}/admin/insights/posts/${id}/publish`, {
+    ...DEFAULT_OPTS,
+    method: "POST"
+  });
+  if (!res.ok) throw new Error(await toErrorCode(res, "publish_error"));
+  return (await res.json()) as InsightPostAdmin;
+}
+
+export async function unpublishInsightPost(id: number): Promise<InsightPostAdmin> {
+  const res = await fetch(`${API_BASE}/admin/insights/posts/${id}/unpublish`, {
+    ...DEFAULT_OPTS,
+    method: "POST"
+  });
+  if (!res.ok) throw new Error(await toErrorCode(res, "unpublish_error"));
+  return (await res.json()) as InsightPostAdmin;
 }

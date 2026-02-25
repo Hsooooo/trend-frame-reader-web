@@ -1,9 +1,25 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { fetchKeywordSentiments } from "../../lib/api";
-import { KeywordSentimentItem, KeywordSentimentsResponse, SentimentLabel } from "../../lib/types";
+import {
+  createInsightDraft,
+  fetchAdminInsightPosts,
+  fetchKeywordSentiments,
+  patchInsightPost,
+  publishInsightPost,
+  unpublishInsightPost
+} from "../../lib/api";
+import {
+  InsightPostAdmin,
+  KeywordSentimentItem,
+  KeywordSentimentsResponse,
+  SentimentLabel
+} from "../../lib/types";
 import { useAuth } from "../context/auth";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const SENTIMENT_LABEL: Record<string, string> = {
   very_positive: "Very Positive",
@@ -43,10 +59,9 @@ function sentimentClass(label: string): string {
   return "tone-neutral";
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+// ── Keyword Sentiments tab ────────────────────────────────────────────────────
 
-export default function InsightsPage() {
-  const { user, loading: authLoading } = useAuth();
+function KeywordSentimentsTab() {
   const initial = initialDateRange();
   const [dateFrom, setDateFrom] = useState(initial.from);
   const [dateTo, setDateTo] = useState(initial.to);
@@ -58,12 +73,7 @@ export default function InsightsPage() {
     setLoading(true);
     setError("");
     try {
-      const data = await fetchKeywordSentiments({
-        dateFrom: from,
-        dateTo: to,
-        minFeedback: 2,
-        limit: 100
-      });
+      const data = await fetchKeywordSentiments({ dateFrom: from, dateTo: to, minFeedback: 2, limit: 100 });
       setResult(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "keyword_sentiments_load_failed");
@@ -78,11 +88,244 @@ export default function InsightsPage() {
     void load(dateFrom, dateTo);
   };
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      void load(dateFrom, dateTo);
+  useEffect(() => { void load(dateFrom, dateTo); }, []);
+
+  return (
+    <section className="panel">
+      <form className="insights-filter" onSubmit={onSubmit}>
+        <label>
+          From
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+        </label>
+        <label>
+          To
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+        </label>
+        <button type="submit" className="primary" disabled={loading}>조회</button>
+      </form>
+
+      {loading && <p className="meta">불러오는 중...</p>}
+      {error && <p className="error">{error}</p>}
+
+      {result && (
+        <>
+          <div className="row insights-summary">
+            <span className="meta">기간: {result.date_from} ~ {result.date_to}</span>
+            <span className="meta">Total keywords: {result.total_keywords}</span>
+          </div>
+          <div className="insights-table-wrap">
+            <table className="insights-table">
+              <thead>
+                <tr>
+                  <th>Keyword</th><th>Sentiment</th><th>Liked</th>
+                  <th>Disliked</th><th>Total Items</th><th>Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.keywords.map((item: KeywordSentimentItem) => (
+                  <tr key={item.keyword}>
+                    <td>{item.keyword}</td>
+                    <td><span className={`badge ${sentimentClass(item.sentiment_label)}`}>{prettyLabel(item.sentiment_label)}</span></td>
+                    <td>{item.liked_count}</td>
+                    <td>{item.disliked_count}</td>
+                    <td>{item.total_items}</td>
+                    <td>{item.sentiment_score.toFixed(3)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!result.keywords.length && <p className="meta">조건에 맞는 키워드가 없습니다.</p>}
+        </>
+      )}
+    </section>
+  );
+}
+
+// ── Posts Admin tab ───────────────────────────────────────────────────────────
+
+type EditState = { title: string; summary: string; body: string };
+
+function PostsAdminTab() {
+  const [posts, setPosts] = useState<InsightPostAdmin[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [draftDays, setDraftDays] = useState(7);
+  const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editFields, setEditFields] = useState<EditState>({ title: "", summary: "", body: "" });
+  const [saving, setSaving] = useState(false);
+  const [actionError, setActionError] = useState("");
+
+  const loadPosts = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await fetchAdminInsightPosts();
+      setPosts(data.posts);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "posts_load_failed");
+    } finally {
+      setLoading(false);
     }
-  }, [authLoading, user]);
+  };
+
+  useEffect(() => { void loadPosts(); }, []);
+
+  const handleCreateDraft = async () => {
+    setCreating(true);
+    setActionError("");
+    try {
+      const post = await createInsightDraft(draftDays);
+      setPosts((prev) => [post, ...prev]);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "draft_create_failed");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const startEdit = (post: InsightPostAdmin) => {
+    setEditingId(post.id);
+    setEditFields({ title: post.title, summary: post.summary ?? "", body: post.body ?? "" });
+    setActionError("");
+  };
+
+  const cancelEdit = () => { setEditingId(null); setActionError(""); };
+
+  const handleSave = async (id: number) => {
+    setSaving(true);
+    setActionError("");
+    try {
+      const updated = await patchInsightPost(id, {
+        title: editFields.title || undefined,
+        summary: editFields.summary || undefined,
+        body: editFields.body || undefined
+      });
+      setPosts((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      setEditingId(null);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "save_failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePublish = async (id: number) => {
+    setActionError("");
+    try {
+      const updated = await publishInsightPost(id);
+      setPosts((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "publish_failed");
+    }
+  };
+
+  const handleUnpublish = async (id: number) => {
+    setActionError("");
+    try {
+      const updated = await unpublishInsightPost(id);
+      setPosts((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "unpublish_failed");
+    }
+  };
+
+  const fmtDate = (iso: string | null | undefined) =>
+    iso ? new Date(iso).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" }) : "—";
+
+  return (
+    <section className="panel">
+      <div className="admin-posts-toolbar">
+        <select value={draftDays} onChange={(e) => setDraftDays(Number(e.target.value))}>
+          <option value={7}>7일</option>
+          <option value={14}>14일</option>
+          <option value={30}>30일</option>
+        </select>
+        <button className="primary" onClick={() => void handleCreateDraft()} disabled={creating}>
+          {creating ? "생성 중..." : "+ 새 초안 생성"}
+        </button>
+        <button onClick={() => void loadPosts()} disabled={loading}>새로고침</button>
+      </div>
+
+      {actionError && <p className="error" style={{ marginBottom: 8 }}>{actionError}</p>}
+      {loading && <p className="meta">불러오는 중...</p>}
+      {error && <p className="error">{error}</p>}
+      {!loading && !error && posts.length === 0 && <p className="meta">포스트가 없습니다.</p>}
+
+      {posts.map((post) => (
+        <div key={post.id} className="admin-post-row">
+          <div className="admin-post-meta">
+            <span className={`badge ${post.status === "published" ? "saved" : "tone-neutral"}`}>
+              {post.status === "published" ? "발행됨" : "초안"}
+            </span>
+            <span className="admin-post-title">{post.title}</span>
+            <span className="meta">{post.period_start} ~ {post.period_end}</span>
+          </div>
+          <div className="meta">
+            생성: {fmtDate(post.created_at)}
+            {post.published_at ? ` · 발행: ${fmtDate(post.published_at)}` : ""}
+          </div>
+
+          {editingId === post.id ? (
+            <div className="draft-editor">
+              <input
+                type="text"
+                placeholder="제목"
+                value={editFields.title}
+                onChange={(e) => setEditFields((f) => ({ ...f, title: e.target.value }))}
+              />
+              <input
+                type="text"
+                placeholder="요약"
+                value={editFields.summary}
+                onChange={(e) => setEditFields((f) => ({ ...f, summary: e.target.value }))}
+              />
+              <textarea
+                placeholder="본문 (마크다운)"
+                value={editFields.body}
+                onChange={(e) => setEditFields((f) => ({ ...f, body: e.target.value }))}
+              />
+              <div className="draft-editor-actions">
+                <button className="primary" onClick={() => void handleSave(post.id)} disabled={saving}>
+                  {saving ? "저장 중..." : "저장"}
+                </button>
+                <button onClick={cancelEdit}>취소</button>
+              </div>
+            </div>
+          ) : (
+            <div className="admin-post-actions">
+              <button className="soft" onClick={() => startEdit(post)}>편집</button>
+              {post.status === "draft" ? (
+                <button className="primary" onClick={() => void handlePublish(post.id)}>발행</button>
+              ) : (
+                <button className="warn" onClick={() => void handleUnpublish(post.id)}>발행 취소</button>
+              )}
+              {post.status === "published" && (
+                <a
+                  href={`/posts/${post.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontSize: "0.86rem", alignSelf: "center" }}
+                >
+                  보기 ↗
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
+type Tab = "keywords" | "posts";
+
+export default function InsightsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const [tab, setTab] = useState<Tab>("keywords");
 
   if (!authLoading && !user) {
     return (
@@ -101,72 +344,31 @@ export default function InsightsPage() {
     );
   }
 
+  if (authLoading) {
+    return <main><h1>Insights</h1><p className="meta">로드 중...</p></main>;
+  }
+
   return (
     <main>
       <h1>Insights</h1>
-      <p>키워드 감성 점수(liked/disliked 기반)</p>
+      <p>운영자 전용 인사이트 대시보드</p>
 
-      <section className="panel">
-        <form className="insights-filter" onSubmit={onSubmit}>
-          <label>
-            From
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-          </label>
-          <label>
-            To
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-          </label>
-          <button type="submit" className="primary" disabled={loading}>
-            조회
-          </button>
-        </form>
+      <div className="tab-bar">
+        <button
+          className={`tab-btn${tab === "keywords" ? " active" : ""}`}
+          onClick={() => setTab("keywords")}
+        >
+          키워드 감성
+        </button>
+        <button
+          className={`tab-btn${tab === "posts" ? " active" : ""}`}
+          onClick={() => setTab("posts")}
+        >
+          포스트 관리
+        </button>
+      </div>
 
-        {loading && <p className="meta">불러오는 중...</p>}
-        {error && <p className="error">{error}</p>}
-
-        {result && (
-          <>
-            <div className="row insights-summary">
-              <span className="meta">
-                기간: {result.date_from} ~ {result.date_to}
-              </span>
-              <span className="meta">Total keywords: {result.total_keywords}</span>
-            </div>
-
-            <div className="insights-table-wrap">
-              <table className="insights-table">
-                <thead>
-                  <tr>
-                    <th>Keyword</th>
-                    <th>Sentiment</th>
-                    <th>Liked</th>
-                    <th>Disliked</th>
-                    <th>Total Items</th>
-                    <th>Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.keywords.map((item: KeywordSentimentItem) => (
-                    <tr key={item.keyword}>
-                      <td>{item.keyword}</td>
-                      <td>
-                        <span className={`badge ${sentimentClass(item.sentiment_label)}`}>
-                          {prettyLabel(item.sentiment_label)}
-                        </span>
-                      </td>
-                      <td>{item.liked_count}</td>
-                      <td>{item.disliked_count}</td>
-                      <td>{item.total_items}</td>
-                      <td>{item.sentiment_score.toFixed(3)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {!result.keywords.length && <p className="meta">조건에 맞는 키워드가 없습니다.</p>}
-          </>
-        )}
-      </section>
+      {tab === "keywords" ? <KeywordSentimentsTab /> : <PostsAdminTab />}
     </main>
   );
 }
