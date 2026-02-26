@@ -170,7 +170,7 @@ export default function SimilarityGraphView({ data, onKeywordClick, isMobile }: 
       .append("line")
       .attr("stroke", (d) => (d.edgeType === "similarity" ? "#2dd4bf" : "#bfdbfe"))
       .attr("stroke-width", (d) =>
-        d.edgeType === "similarity" ? Math.max(2, Math.min(10, d.weight * 10)) : 1
+        d.edgeType === "similarity" ? Math.max(1, Math.min(4, d.weight * 4)) : 1
       )
       .attr("stroke-dasharray", (d) => (d.edgeType === "has_keyword" ? "4 3" : "none"))
       .attr("stroke-linecap", "round");
