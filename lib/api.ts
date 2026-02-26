@@ -52,6 +52,17 @@ export async function fetchTodayFeed(slot: Slot): Promise<FeedResponse> {
   return (await res.json()) as FeedResponse;
 }
 
+export async function fetchTodayFeedServer(slot: Slot): Promise<FeedResponse | null> {
+  const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  try {
+    const res = await fetch(`${API}/feeds/today?slot=${slot}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as FeedResponse;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchBookmarks(page: number, size: number): Promise<BookmarkResponse> {
   const res = await fetch(`${API_BASE}/bookmarks?page=${page}&size=${size}`, { ...DEFAULT_OPTS, cache: "no-store" });
   if (!res.ok) {
