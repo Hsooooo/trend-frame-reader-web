@@ -302,9 +302,9 @@ export default function GraphPage() {
                 <span
                   style={{
                     display: "inline-block",
-                    background: activeTab === "similarity" ? "#ede9fe" : "#ccfbf1",
-                    color: activeTab === "similarity" ? "#7c3aed" : "#0f766e",
-                    border: `1px solid ${activeTab === "similarity" ? "#c4b5fd" : "#5eead4"}`,
+                    background: "#ccfbf1",
+                    color: "#0f766e",
+                    border: "1px solid #5eead4",
                     borderRadius: "999px",
                     padding: "2px 10px",
                     fontSize: "0.85rem",

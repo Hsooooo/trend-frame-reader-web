@@ -71,8 +71,8 @@ export default function SimilarityGraphView({ data, onKeywordClick, isMobile }: 
         radius: kw.is_root
           ? keywordRadius(Math.max(kw.doc_frequency, kw.bookmark_frequency)) + 4
           : keywordRadius(Math.max(kw.doc_frequency, kw.bookmark_frequency)),
-        fillColor: kw.is_root ? "#fef3c7" : keywordFill(kw.sentiment_score),
-        strokeColor: kw.is_root ? "#f59e0b" : keywordStroke(kw.sentiment_score),
+        fillColor: kw.is_root ? "#ccfbf1" : keywordFill(kw.sentiment_score),
+        strokeColor: kw.is_root ? "#14b8a6" : keywordStroke(kw.sentiment_score),
       };
       nodes.push(node);
       nodeMap.set(kw.id, node);
@@ -168,7 +168,7 @@ export default function SimilarityGraphView({ data, onKeywordClick, isMobile }: 
       .data(links)
       .enter()
       .append("line")
-      .attr("stroke", (d) => (d.edgeType === "similarity" ? "#a78bfa" : "#bfdbfe"))
+      .attr("stroke", (d) => (d.edgeType === "similarity" ? "#2dd4bf" : "#bfdbfe"))
       .attr("stroke-width", (d) =>
         d.edgeType === "similarity" ? Math.max(2, Math.min(10, d.weight * 10)) : 1
       )
@@ -350,11 +350,11 @@ export default function SimilarityGraphView({ data, onKeywordClick, isMobile }: 
         }}
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#fef3c7", border: "1.5px solid #f59e0b" }} />
+          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#ccfbf1", border: "1.5px solid #14b8a6" }} />
           루트 키워드
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ display: "inline-block", width: 24, height: 3, background: "#a78bfa", borderRadius: 2 }} />
+          <span style={{ display: "inline-block", width: 24, height: 3, background: "#2dd4bf", borderRadius: 2 }} />
           유사도
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
