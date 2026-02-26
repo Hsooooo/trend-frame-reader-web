@@ -252,6 +252,16 @@ export async function unpublishInsightPost(id: number): Promise<InsightPostAdmin
   return (await res.json()) as InsightPostAdmin;
 }
 
+export async function deleteInsightPost(postId: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/admin/insights/posts/${postId}`, {
+    ...DEFAULT_OPTS,
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    throw new Error(await toErrorCode(res, "delete_post_error"));
+  }
+}
+
 export async function fetchUserStats(options?: {
   dateFrom?: string;
   dateTo?: string;

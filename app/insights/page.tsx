@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import {
   createInsightDraft,
+  deleteInsightPost,
   fetchAdminInsightPosts,
   fetchKeywordSentiments,
   fetchUserStats,
@@ -234,6 +235,17 @@ function PostsAdminTab() {
     }
   };
 
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("이 초안을 삭제하시겠습니까?")) return;
+    setActionError("");
+    try {
+      await deleteInsightPost(id);
+      setPosts((prev) => prev.filter((p) => p.id !== id));
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "delete_failed");
+    }
+  };
+
   const fmtDate = (iso: string | null | undefined) =>
     iso ? new Date(iso).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" }) : "—";
 
@@ -303,6 +315,9 @@ function PostsAdminTab() {
                 <button className="primary" onClick={() => void handlePublish(post.id)}>발행</button>
               ) : (
                 <button className="warn" onClick={() => void handleUnpublish(post.id)}>발행 취소</button>
+              )}
+              {post.status === "draft" && (
+                <button className="warn" onClick={() => void handleDelete(post.id)}>삭제</button>
               )}
               {post.status === "published" && (
                 <a
