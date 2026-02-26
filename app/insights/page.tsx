@@ -5,6 +5,7 @@ import {
   createInsightDraft,
   fetchAdminInsightPosts,
   fetchKeywordSentiments,
+  fetchUserStats,
   patchInsightPost,
   publishInsightPost,
   unpublishInsightPost
@@ -13,7 +14,9 @@ import {
   InsightPostAdmin,
   KeywordSentimentItem,
   KeywordSentimentsResponse,
-  SentimentLabel
+  SentimentLabel,
+  UserStatItem,
+  UserStatsResponse
 } from "../../lib/types";
 import { useAuth } from "../context/auth";
 
@@ -319,9 +322,112 @@ function PostsAdminTab() {
   );
 }
 
+// ── User Stats tab ────────────────────────────────────────────────────────────
+
+function initialUserDateRange() {
+  const to = new Date();
+  const from = new Date();
+  from.setDate(to.getDate() - 29);
+  return { from: formatDateInput(from), to: formatDateInput(to) };
+}
+
+function UserStatsTab() {
+  const initial = initialUserDateRange();
+  const [dateFrom, setDateFrom] = useState(initial.from);
+  const [dateTo, setDateTo] = useState(initial.to);
+  const [result, setResult] = useState<UserStatsResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const load = async (from: string, to: string) => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await fetchUserStats({ dateFrom: from, dateTo: to });
+      setResult(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "user_stats_load_failed");
+      setResult(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    void load(dateFrom, dateTo);
+  };
+
+  useEffect(() => { void load(dateFrom, dateTo); }, []);
+
+  return (
+    <section className="panel">
+      <form className="insights-filter" onSubmit={onSubmit}>
+        <label>
+          From
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+        </label>
+        <label>
+          To
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+        </label>
+        <button type="submit" className="primary" disabled={loading}>조회</button>
+      </form>
+
+      {loading && <p className="meta">불러오는 중...</p>}
+      {error && <p className="error">{error}</p>}
+
+      {result && (
+        <>
+          <div className="row insights-summary">
+            <span className="meta">기간: {result.date_from} ~ {result.date_to}</span>
+            <span className="meta">사용자 수: {result.users.length}</span>
+          </div>
+          <div className="insights-table-wrap">
+            <table className="insights-table">
+              <thead>
+                <tr>
+                  <th>사용자</th>
+                  <th>가입일</th>
+                  <th>노출</th>
+                  <th>클릭</th>
+                  <th>CTR</th>
+                  <th>저장</th>
+                  <th>좋아요</th>
+                  <th>싫어요</th>
+                  <th>스킵</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.users.map((u: UserStatItem) => (
+                  <tr key={u.user_id}>
+                    <td>
+                      <div>{u.name}{u.is_owner && <span className="badge saved" style={{ marginLeft: 4 }}>owner</span>}</div>
+                      <div className="meta" style={{ fontSize: "0.8rem" }}>{u.email}</div>
+                    </td>
+                    <td>{new Date(u.joined_at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}</td>
+                    <td>{u.impressions}</td>
+                    <td>{u.clicks}</td>
+                    <td>{(u.ctr * 100).toFixed(1)}%</td>
+                    <td>{u.saved}</td>
+                    <td>{u.liked}</td>
+                    <td>{u.disliked}</td>
+                    <td>{u.skipped}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!result.users.length && <p className="meta">사용자 데이터가 없습니다.</p>}
+        </>
+      )}
+    </section>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-type Tab = "keywords" | "posts";
+type Tab = "keywords" | "posts" | "users";
 
 export default function InsightsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -366,9 +472,19 @@ export default function InsightsPage() {
         >
           포스트 관리
         </button>
+        {user?.is_owner && (
+          <button
+            className={`tab-btn${tab === "users" ? " active" : ""}`}
+            onClick={() => setTab("users")}
+          >
+            사용자 현황
+          </button>
+        )}
       </div>
 
-      {tab === "keywords" ? <KeywordSentimentsTab /> : <PostsAdminTab />}
+      {tab === "keywords" && <KeywordSentimentsTab />}
+      {tab === "posts" && <PostsAdminTab />}
+      {tab === "users" && user?.is_owner && <UserStatsTab />}
     </main>
   );
 }

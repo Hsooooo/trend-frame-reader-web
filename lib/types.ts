@@ -215,3 +215,24 @@ export type InsightAdminListResponse = {
   total: number;
   posts: InsightPostAdmin[];
 };
+
+export type UserStatItem = {
+  user_id: number;
+  email: string;
+  name: string;
+  is_owner: boolean;
+  joined_at: string;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  saved: number;
+  liked: number;
+  disliked: number;
+  skipped: number;
+};
+
+export type UserStatsResponse = {
+  date_from: string;
+  date_to: string;
+  users: UserStatItem[];
+};

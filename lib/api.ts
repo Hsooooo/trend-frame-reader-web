@@ -13,6 +13,7 @@ import {
   Slot,
   TimelineResponse,
   User,
+  UserStatsResponse,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
@@ -249,4 +250,19 @@ export async function unpublishInsightPost(id: number): Promise<InsightPostAdmin
   });
   if (!res.ok) throw new Error(await toErrorCode(res, "unpublish_error"));
   return (await res.json()) as InsightPostAdmin;
+}
+
+export async function fetchUserStats(options?: {
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<UserStatsResponse> {
+  const qs = new URLSearchParams();
+  if (options?.dateFrom) qs.set("date_from", options.dateFrom);
+  if (options?.dateTo) qs.set("date_to", options.dateTo);
+  const url = `${API_BASE}/admin/user-stats${qs.toString() ? `?${qs}` : ""}`;
+  const res = await fetch(url, { ...DEFAULT_OPTS, cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(await toErrorCode(res, "user_stats_error"));
+  }
+  return (await res.json()) as UserStatsResponse;
 }
