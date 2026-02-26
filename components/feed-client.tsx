@@ -53,11 +53,15 @@ export default function FeedClient({
     setError("");
     try {
       const data = await fetchTodayFeed();
+      const filterCurated = (items: FeedItem[]) =>
+        items.filter((item) => !item.saved && !item.skipped);
       const groups =
         data.groups && data.groups.length > 0
           ? data.groups
+              .map((g) => ({ ...g, items: filterCurated(g.items) }))
+              .filter((g) => g.items.length > 0)
           : data.items && data.items.length > 0
-            ? [{ category: "general", items: data.items }]
+            ? [{ category: "general", items: filterCurated(data.items) }]
             : [];
       setFeed({ generated_at: data.generated_at, groups });
     } catch (e) {
