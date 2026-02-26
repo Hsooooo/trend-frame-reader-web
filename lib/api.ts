@@ -10,7 +10,6 @@ import {
   InsightPostAdmin,
   KeywordSentimentsResponse,
   SimilarityGraphResponse,
-  Slot,
   TimelineResponse,
   User,
   UserStatsResponse,
@@ -46,18 +45,18 @@ export async function logout(): Promise<void> {
   await fetch(`${API_BASE}/auth/logout`, { ...DEFAULT_OPTS, method: "POST" });
 }
 
-export async function fetchTodayFeed(slot: Slot): Promise<FeedResponse> {
-  const res = await fetch(`${API_BASE}/feeds/today?slot=${slot}`, { ...DEFAULT_OPTS, cache: "no-store" });
+export async function fetchTodayFeed(): Promise<FeedResponse> {
+  const res = await fetch(`${API_BASE}/feeds/today`, { ...DEFAULT_OPTS, cache: "no-store" });
   if (!res.ok) {
     throw new Error(await toErrorCode(res, "feed_error"));
   }
   return (await res.json()) as FeedResponse;
 }
 
-export async function fetchTodayFeedServer(slot: Slot): Promise<FeedResponse | null> {
+export async function fetchTodayFeedServer(): Promise<FeedResponse | null> {
   const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
   try {
-    const res = await fetch(`${API}/feeds/today?slot=${slot}`, { cache: "no-store" });
+    const res = await fetch(`${API}/feeds/today`, { cache: "no-store" });
     if (!res.ok) return null;
     return (await res.json()) as FeedResponse;
   } catch {

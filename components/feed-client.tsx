@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Script from "next/script";
 import FeedItemCard from "../components/feed-item-card";
 import { fetchTodayFeed, sendClickEvent, sendFeedback } from "../lib/api";
-import { defaultSlotByKstNow, isSlotOpen } from "../lib/slot";
-import { FeedGroup, FeedItem, FeedbackAction, Slot } from "../lib/types";
+import { currentPeriodLabel } from "../lib/slot";
+import { FeedGroup, FeedItem, FeedbackAction } from "../lib/types";
 import { useAuth } from "../app/context/auth";
 
 function categoryLabel(key: string): string {
@@ -38,30 +38,21 @@ export default function FeedClient({
   initialFeed: { generated_at: string; groups: FeedGroup[] } | null;
 }) {
   const { user } = useAuth();
-  const [slot, setSlot] = useState<Slot>(defaultSlotByKstNow());
   const [feed, setFeed] = useState<{ generated_at: string; groups: FeedGroup[] } | null>(initialFeed ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pendingMap, setPendingMap] = useState<Record<string, boolean>>({});
-  const amOpen = isSlotOpen("am");
-  const pmOpen = isSlotOpen("pm");
 
   const generatedLabel = useMemo(() => {
     if (!feed?.generated_at) return "-";
     return new Date(feed.generated_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
   }, [feed?.generated_at]);
 
-  const loadFeed = async (targetSlot: Slot) => {
-    if (!isSlotOpen(targetSlot)) {
-      setFeed(null);
-      setError(targetSlot === "pm" ? "PM 피드는 KST 21:30 이후 열립니다." : "AM 피드는 KST 07:30 이후 열립니다.");
-      return;
-    }
-
+  const loadFeed = async () => {
     setLoading(true);
     setError("");
     try {
-      const data = await fetchTodayFeed(targetSlot);
+      const data = await fetchTodayFeed();
       const groups =
         data.groups && data.groups.length > 0
           ? data.groups
@@ -73,7 +64,7 @@ export default function FeedClient({
       setFeed(null);
       const code = e instanceof Error ? e.message : "feed_load_failed";
       if (code.includes("feed_error_404")) {
-        setError("해당 슬롯 피드가 아직 생성되지 않았습니다.");
+        setError("피드가 아직 생성되지 않았습니다.");
       } else {
         setError(code);
       }
@@ -100,7 +91,7 @@ export default function FeedClient({
     setPendingMap((prev) => ({ ...prev, [pendingKey]: true }));
     try {
       await sendFeedback(item.item_id, action);
-      await loadFeed(slot);
+      await loadFeed();
     } catch (e) {
       setError(e instanceof Error ? e.message : "feedback_error");
     } finally {
@@ -109,8 +100,8 @@ export default function FeedClient({
   };
 
   useEffect(() => {
-    void loadFeed(slot);
-  }, [slot]);
+    void loadFeed();
+  }, []);
 
   return (
     <>
@@ -164,19 +155,13 @@ export default function FeedClient({
           </a>
         </div>
       </div>
-      <p>Daily feed · Slot {slot.toUpperCase()} · Generated {generatedLabel}</p>
+      <p>{currentPeriodLabel()} · 업데이트: {generatedLabel}</p>
 
       <section className="panel">
         <div className="row">
           <strong>오늘 피드</strong>
           <div className="controls">
-            <button disabled={!amOpen} className={slot === "am" ? "soft" : ""} onClick={() => setSlot("am")}>
-              AM
-            </button>
-            <button disabled={!pmOpen} className={slot === "pm" ? "soft" : ""} onClick={() => setSlot("pm")}>
-              PM
-            </button>
-            <button onClick={() => void loadFeed(slot)}>새로고침</button>
+            <button onClick={() => void loadFeed()}>새로고침</button>
           </div>
         </div>
 

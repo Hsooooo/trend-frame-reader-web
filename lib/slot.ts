@@ -1,18 +1,8 @@
-import { Slot } from "./types";
-
-function kstNowParts(): { hour: number; minute: number } {
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-  return { hour: now.getHours(), minute: now.getMinutes() };
+function kstHour(): number {
+  return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" })).getHours();
 }
 
-export function isSlotOpen(slot: Slot): boolean {
-  const { hour, minute } = kstNowParts();
-  if (slot === "am") {
-    return hour > 7 || (hour === 7 && minute >= 30);
-  }
-  return hour > 21 || (hour === 21 && minute >= 30);
-}
-
-export function defaultSlotByKstNow(): Slot {
-  return isSlotOpen("pm") ? "pm" : "am";
+export function currentPeriodLabel(): string {
+  const h = kstHour();
+  return h >= 6 && h < 18 ? "오전 피드" : "저녁 피드";
 }

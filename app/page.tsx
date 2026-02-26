@@ -1,11 +1,9 @@
 import { fetchTodayFeedServer } from "../lib/api";
-import { defaultSlotByKstNow } from "../lib/slot";
 import FeedClient from "../components/feed-client";
 import type { FeedGroup } from "../lib/types";
 
 export default async function HomePage() {
-  const slot = defaultSlotByKstNow();
-  const data = await fetchTodayFeedServer(slot);
+  const data = await fetchTodayFeedServer();
 
   const initialFeed: { generated_at: string; groups: FeedGroup[] } | null =
     data && (data.groups && data.groups.length > 0 || data.items && data.items.length > 0)
