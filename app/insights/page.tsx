@@ -481,12 +481,14 @@ export default function InsightsPage() {
         >
           키워드 감성
         </button>
-        <button
-          className={`tab-btn${tab === "posts" ? " active" : ""}`}
-          onClick={() => setTab("posts")}
-        >
-          포스트 관리
-        </button>
+        {user?.is_owner && (
+          <button
+            className={`tab-btn${tab === "posts" ? " active" : ""}`}
+            onClick={() => setTab("posts")}
+          >
+            포스트 관리
+          </button>
+        )}
         {user?.is_owner && (
           <button
             className={`tab-btn${tab === "users" ? " active" : ""}`}
@@ -498,7 +500,7 @@ export default function InsightsPage() {
       </div>
 
       {tab === "keywords" && <KeywordSentimentsTab />}
-      {tab === "posts" && <PostsAdminTab />}
+      {tab === "posts" && user?.is_owner && <PostsAdminTab />}
       {tab === "users" && user?.is_owner && <UserStatsTab />}
     </main>
   );
