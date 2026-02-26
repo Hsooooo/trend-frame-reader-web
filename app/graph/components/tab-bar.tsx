@@ -1,6 +1,6 @@
 "use client";
 
-type Tab = "graph" | "timeline";
+type Tab = "graph" | "similarity" | "timeline";
 
 type TabBarProps = {
   activeTab: Tab;
@@ -15,6 +15,12 @@ export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
         onClick={() => onTabChange("graph")}
       >
         그래프
+      </button>
+      <button
+        className={`graph-tab${activeTab === "similarity" ? " active" : ""}`}
+        onClick={() => onTabChange("similarity")}
+      >
+        유사도
       </button>
       <button
         className={`graph-tab${activeTab === "timeline" ? " active" : ""}`}

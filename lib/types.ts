@@ -129,6 +129,32 @@ export type FullGraphResponse = {
   edges: GraphEdge[];
 };
 
+// ── Similarity Graph types ────────────────────────────────────────────────────
+
+export type SimilarityGraphKeywordNode = {
+  id: string;
+  keyword: string;
+  doc_frequency: number;
+  bookmark_frequency: number;
+  sentiment_score: number;
+  similarity_score: number;
+  is_root: boolean;
+};
+
+export type SimilarityGraphEdge = {
+  source: string;
+  target: string;
+  type: "similarity" | "has_keyword";
+  weight: number;
+};
+
+export type SimilarityGraphResponse = {
+  root_keyword: string;
+  keyword_nodes: SimilarityGraphKeywordNode[];
+  article_nodes: FullGraphArticleNode[];
+  edges: SimilarityGraphEdge[];
+};
+
 // ── Auth types ────────────────────────────────────────────────────────────────
 
 export type User = {

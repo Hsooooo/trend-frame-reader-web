@@ -9,6 +9,7 @@ import {
   InsightPost,
   InsightPostAdmin,
   KeywordSentimentsResponse,
+  SimilarityGraphResponse,
   Slot,
   TimelineResponse,
   User,
@@ -158,6 +159,24 @@ export async function fetchTimeline(days = 30): Promise<TimelineResponse> {
     throw new Error(await toErrorCode(res, "timeline_error"));
   }
   return (await res.json()) as TimelineResponse;
+}
+
+export async function fetchSimilarityGraph(
+  keyword: string,
+  options?: { threshold?: number; limit?: number; maxArticlesPerKeyword?: number }
+): Promise<SimilarityGraphResponse> {
+  const qs = new URLSearchParams({ keyword });
+  if (options?.threshold !== undefined) qs.set("threshold", String(options.threshold));
+  if (options?.limit !== undefined) qs.set("limit", String(options.limit));
+  if (options?.maxArticlesPerKeyword !== undefined) qs.set("max_articles_per_keyword", String(options.maxArticlesPerKeyword));
+  const res = await fetch(
+    `${API_BASE}/bookmarks/graph/similarity?${qs.toString()}`,
+    { ...DEFAULT_OPTS, cache: "no-store" }
+  );
+  if (!res.ok) {
+    throw new Error(await toErrorCode(res, "similarity_graph_error"));
+  }
+  return (await res.json()) as SimilarityGraphResponse;
 }
 
 // ── Insight Posts (Public) ──────────────────────────────────────────────────

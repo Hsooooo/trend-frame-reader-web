@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import TabBar, { type Tab } from "./components/tab-bar";
 import GraphView from "./components/graph-view";
+import SimilarityGraphView from "./components/similarity-graph-view";
 import TimelineView from "./components/timeline-view";
-import { fetchFullGraph, fetchTimeline } from "../../lib/api";
-import type { FullGraphResponse, TimelineResponse } from "../../lib/types";
+import { fetchFullGraph, fetchSimilarityGraph, fetchTimeline } from "../../lib/api";
+import type { FullGraphResponse, SimilarityGraphResponse, TimelineResponse } from "../../lib/types";
 import { useAuth } from "../context/auth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
@@ -33,6 +34,10 @@ export default function GraphPage() {
   // Graph tab state
   const [graphData, setGraphData] = useState<FullGraphResponse | null>(null);
   const [graphLoading, setGraphLoading] = useState(false);
+
+  // Similarity tab state
+  const [simGraphData, setSimGraphData] = useState<SimilarityGraphResponse | null>(null);
+  const [simGraphLoading, setSimGraphLoading] = useState(false);
 
   // Timeline tab state
   const [timelineData, setTimelineData] = useState<TimelineResponse | null>(null);
@@ -63,6 +68,24 @@ export default function GraphPage() {
       setError(e instanceof Error ? e.message : "graph_load_failed");
     } finally {
       setGraphLoading(false);
+    }
+  }, [isMobile]);
+
+  // ── Load similarity graph ───────────────────────────────────────────────────
+
+  const loadSimilarityGraph = useCallback(async (keyword: string) => {
+    if (!keyword.trim()) return;
+    setSimGraphLoading(true);
+    setError("");
+    try {
+      const simOptions = isMobile ? { limit: 10, maxArticlesPerKeyword: 2 } : { limit: 15 };
+      const data = await fetchSimilarityGraph(keyword.trim(), simOptions);
+      setSimGraphData(data);
+      setActiveKeyword(keyword.trim());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "similarity_graph_load_failed");
+    } finally {
+      setSimGraphLoading(false);
     }
   }, [isMobile]);
 
@@ -110,8 +133,11 @@ export default function GraphPage() {
       if (tab === "timeline" && !timelineData) {
         void loadTimeline();
       }
+      if (tab === "similarity" && !simGraphData && activeKeyword) {
+        void loadSimilarityGraph(activeKeyword);
+      }
     },
-    [timelineData, loadTimeline]
+    [timelineData, loadTimeline, simGraphData, loadSimilarityGraph, activeKeyword]
   );
 
   // ── Search handler ──────────────────────────────────────────────────────────
@@ -120,7 +146,7 @@ export default function GraphPage() {
     if (searchInput.trim()) {
       void loadGraph(searchInput.trim());
       setSearchInput("");
-      if (activeTab !== "graph") setActiveTab("graph");
+      setActiveTab("graph");
     }
   };
 
@@ -130,12 +156,21 @@ export default function GraphPage() {
 
   const handleKeywordClick = useCallback(
     (keyword: string) => {
-      void loadGraph(keyword);
+      if (activeTab === "similarity") {
+        void loadSimilarityGraph(keyword);
+      } else {
+        void loadGraph(keyword);
+      }
     },
-    [loadGraph]
+    [activeTab, loadGraph, loadSimilarityGraph]
   );
 
-  const loading = activeTab === "graph" ? graphLoading : timelineLoading;
+  const loading =
+    activeTab === "graph"
+      ? graphLoading
+      : activeTab === "similarity"
+      ? simGraphLoading
+      : timelineLoading;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -194,8 +229,12 @@ export default function GraphPage() {
                 <button
                   key={item.keyword}
                   onClick={() => {
-                    void loadGraph(item.keyword);
-                    if (activeTab !== "graph") setActiveTab("graph");
+                    if (activeTab === "similarity") {
+                      void loadSimilarityGraph(item.keyword);
+                    } else {
+                      void loadGraph(item.keyword);
+                      if (activeTab !== "graph") setActiveTab("graph");
+                    }
                   }}
                   style={{
                     borderRadius: "999px",
@@ -258,14 +297,14 @@ export default function GraphPage() {
         {/* Status bar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
           <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "#344054" }}>
-            {activeTab === "graph" && activeKeyword ? (
+            {(activeTab === "graph" || activeTab === "similarity") && activeKeyword ? (
               <>
                 <span
                   style={{
                     display: "inline-block",
-                    background: "#ccfbf1",
-                    color: "#0f766e",
-                    border: "1px solid #5eead4",
+                    background: activeTab === "similarity" ? "#ede9fe" : "#ccfbf1",
+                    color: activeTab === "similarity" ? "#7c3aed" : "#0f766e",
+                    border: `1px solid ${activeTab === "similarity" ? "#c4b5fd" : "#5eead4"}`,
                     borderRadius: "999px",
                     padding: "2px 10px",
                     fontSize: "0.85rem",
@@ -275,9 +314,14 @@ export default function GraphPage() {
                 >
                   {activeKeyword}
                 </span>
-                {graphData && (
+                {activeTab === "graph" && graphData && (
                   <span style={{ fontSize: "0.82rem", color: "#475467", fontWeight: 400 }}>
                     키워드 {graphData.keyword_nodes.length}개 · 기사 {graphData.article_nodes.length}개
+                  </span>
+                )}
+                {activeTab === "similarity" && simGraphData && (
+                  <span style={{ fontSize: "0.82rem", color: "#475467", fontWeight: 400 }}>
+                    키워드 {simGraphData.keyword_nodes.length}개 · 기사 {simGraphData.article_nodes.length}개
                   </span>
                 )}
               </>
@@ -331,6 +375,39 @@ export default function GraphPage() {
             {graphData && isMobile && (
               <p style={{ margin: "6px 0 0", fontSize: "0.78rem", color: "#94a3b8", textAlign: "center" }}>
                 모바일 최적화 모드 · 상위 15개 키워드
+              </p>
+            )}
+          </>
+        )}
+
+        {/* Similarity graph view */}
+        {activeTab === "similarity" && (
+          <>
+            {simGraphData ? (
+              <SimilarityGraphView data={simGraphData} onKeywordClick={handleKeywordClick} isMobile={isMobile} />
+            ) : (
+              !simGraphLoading && !error && (
+                <div
+                  style={{
+                    width: "100%",
+                    height: 540,
+                    background: "#f8fafc",
+                    borderRadius: 10,
+                    border: "1px solid #e2e8f0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#94a3b8",
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  키워드를 선택하거나 검색하세요
+                </div>
+              )
+            )}
+            {simGraphData && (
+              <p style={{ margin: "10px 0 0", fontSize: "0.78rem", color: "#94a3b8", textAlign: "center" }}>
+                노드를 드래그하거나 클릭해서 탐색하세요 · 선 굵기는 의미적 유사도를 나타냅니다
               </p>
             )}
           </>
