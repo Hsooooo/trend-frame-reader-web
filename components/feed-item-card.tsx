@@ -37,6 +37,9 @@ export default function FeedItemCard({
 
   const displayTitle = item.translated_title_ko?.trim() ? item.translated_title_ko : item.title;
   const hasTranslatedTitle = Boolean(item.translated_title_ko && item.translated_title_ko !== item.title);
+  const publishedLabel = item.published_at
+    ? new Date(item.published_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })
+    : null;
 
   return (
     <article className="item">
@@ -52,6 +55,7 @@ export default function FeedItemCard({
       </div>
 
       {hasTranslatedTitle && <div className="meta original-title">EN: {item.title}</div>}
+      {publishedLabel && <div className="meta">Published {publishedLabel}</div>}
       <div className="meta">{item.short_reason}</div>
 
       {item.keywords && item.keywords.length > 0 && (

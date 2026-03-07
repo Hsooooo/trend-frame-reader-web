@@ -8,6 +8,7 @@ export type FeedItem = {
   item_id: number;
   title: string;
   translated_title_ko?: string | null;
+  published_at?: string | null;
   source: string;
   category: string;
   url: string;
@@ -32,6 +33,12 @@ export type FeedResponse = {
   feed_date: string;
   slot: Slot;
   generated_at: string;
+  items: FeedItem[];
+  groups?: FeedGroup[];
+};
+
+export type StockFeedResponse = {
+  generated_at?: string | null;
   items: FeedItem[];
   groups?: FeedGroup[];
 };
