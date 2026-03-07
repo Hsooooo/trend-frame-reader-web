@@ -1,6 +1,6 @@
 "use client";
 
-type Tab = "graph" | "similarity" | "timeline";
+type Tab = "graph" | "similarity" | "timeline" | "market";
 
 type TabBarProps = {
   activeTab: Tab;
@@ -27,6 +27,12 @@ export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
         onClick={() => onTabChange("timeline")}
       >
         타임라인
+      </button>
+      <button
+        className={`graph-tab${activeTab === "market" ? " active" : ""}`}
+        onClick={() => onTabChange("market")}
+      >
+        마켓
       </button>
     </div>
   );

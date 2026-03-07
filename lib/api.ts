@@ -10,6 +10,7 @@ import {
   InsightPostAdmin,
   KeywordSentimentsResponse,
   SimilarityGraphResponse,
+  MarketTickerGraphResponse,
   TimelineResponse,
   User,
   UserStatsResponse,
@@ -177,6 +178,36 @@ export async function fetchSimilarityGraph(
     throw new Error(await toErrorCode(res, "similarity_graph_error"));
   }
   return (await res.json()) as SimilarityGraphResponse;
+}
+
+type MarketTickerGraphParams = {
+  ticker: string;
+  days?: number;
+  maxArticles?: number;
+  bookmarksOnly?: boolean;
+};
+
+export async function fetchMarketTickerGraph(
+  params: MarketTickerGraphParams
+): Promise<MarketTickerGraphResponse> {
+  const ticker = params.ticker.trim().toUpperCase();
+  if (!ticker) {
+    throw new Error("ticker_required");
+  }
+
+  const qs = new URLSearchParams({ ticker });
+  if (typeof params.days === "number") qs.set("days", String(params.days));
+  if (typeof params.maxArticles === "number") qs.set("max_articles", String(params.maxArticles));
+  qs.set("bookmarks_only", String(params.bookmarksOnly ?? true));
+
+  const res = await fetch(`${API_BASE}/bookmarks/market/graph?${qs.toString()}`, {
+    ...DEFAULT_OPTS,
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(await toErrorCode(res, "market_graph_error"));
+  }
+  return (await res.json()) as MarketTickerGraphResponse;
 }
 
 // ── Insight Posts (Public) ──────────────────────────────────────────────────

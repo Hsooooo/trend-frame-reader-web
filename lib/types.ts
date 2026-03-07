@@ -181,6 +181,65 @@ export type TimelineResponse = {
   articles: TimelineArticle[];
 };
 
+// ── Market Graph types ───────────────────────────────────────────────────────
+
+export type MarketTickerNode = {
+  id: string;
+  symbol: string;
+  exchange?: string | null;
+  mention_count: number;
+  is_focus: boolean;
+};
+
+export type MarketCompanyNode = {
+  id: string;
+  canonical_name: string;
+  mention_count: number;
+};
+
+export type MarketEventNode = {
+  id: string;
+  event_type: string;
+  label: string;
+  count: number;
+};
+
+export type MarketThemeNode = {
+  id: string;
+  name: string;
+  count: number;
+};
+
+export type MarketArticleNode = {
+  id: string;
+  item_id: number;
+  title: string;
+  url: string;
+  source?: string | null;
+  published_at?: string | null;
+  companies: string[];
+  tickers: string[];
+  events: string[];
+  themes: string[];
+};
+
+export type MarketGraphEdge = {
+  source: string;
+  target: string;
+  type: string;
+  weight: number;
+};
+
+export type MarketTickerGraphResponse = {
+  focus_ticker: string;
+  ticker_nodes: MarketTickerNode[];
+  company_nodes: MarketCompanyNode[];
+  event_nodes: MarketEventNode[];
+  theme_nodes: MarketThemeNode[];
+  article_nodes: MarketArticleNode[];
+  edges: MarketGraphEdge[];
+};
+
 // ── Insight Post types ────────────────────────────────────────────────────────
 
 export type InsightPost = {
