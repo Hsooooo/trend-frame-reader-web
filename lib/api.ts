@@ -9,8 +9,9 @@ import {
   InsightPost,
   InsightPostAdmin,
   KeywordSentimentsResponse,
-  SimilarityGraphResponse,
+  MarketGraphBackfillResponse,
   MarketTickerGraphResponse,
+  SimilarityGraphResponse,
   TimelineResponse,
   User,
   UserStatsResponse,
@@ -208,6 +209,18 @@ export async function fetchMarketTickerGraph(
     throw new Error(await toErrorCode(res, "market_graph_error"));
   }
   return (await res.json()) as MarketTickerGraphResponse;
+}
+
+export async function backfillMarketGraph(limit = 0): Promise<MarketGraphBackfillResponse> {
+  const qs = new URLSearchParams({ limit: String(limit) });
+  const res = await fetch(`${API_BASE}/admin/market/backfill?${qs.toString()}`, {
+    ...DEFAULT_OPTS,
+    method: "POST",
+  });
+  if (!res.ok) {
+    throw new Error(await toErrorCode(res, "market_backfill_error"));
+  }
+  return (await res.json()) as MarketGraphBackfillResponse;
 }
 
 // ── Insight Posts (Public) ──────────────────────────────────────────────────

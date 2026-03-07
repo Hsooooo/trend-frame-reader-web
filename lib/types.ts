@@ -240,6 +240,13 @@ export type MarketTickerGraphResponse = {
   edges: MarketGraphEdge[];
 };
 
+export type MarketGraphBackfillResponse = {
+  processed: number;
+  synced: number;
+  failed: number;
+  status: string;
+};
+
 // ── Insight Post types ────────────────────────────────────────────────────────
 
 export type InsightPost = {

@@ -7,9 +7,16 @@ import GraphView from "./components/graph-view";
 import SimilarityGraphView from "./components/similarity-graph-view";
 import MarketGraphView from "./components/market-graph-view";
 import TimelineView from "./components/timeline-view";
-import { fetchFullGraph, fetchMarketTickerGraph, fetchSimilarityGraph, fetchTimeline } from "../../lib/api";
+import {
+  backfillMarketGraph,
+  fetchFullGraph,
+  fetchMarketTickerGraph,
+  fetchSimilarityGraph,
+  fetchTimeline,
+} from "../../lib/api";
 import type {
   FullGraphResponse,
+  MarketGraphBackfillResponse,
   MarketTickerGraphResponse,
   SimilarityGraphResponse,
   TimelineResponse,
@@ -31,11 +38,17 @@ type KeywordCloudResponse = {
 };
 
 function toDisplayError(message: string, scope: "graph" | "timeline" | "market"): string {
+  if (message.includes("not_owner")) {
+    return "관리자 권한이 필요합니다";
+  }
   if (message.includes("ticker_required")) {
     return "미국 주식 티커를 입력하세요";
   }
   if (scope === "market" && message.includes("ticker_not_found")) {
     return "해당 티커에 연결된 북마크 기사 그래프를 찾지 못했습니다";
+  }
+  if (scope === "market" && message.includes("market_backfill_error")) {
+    return "시장 그래프 전체 백필 실행에 실패했습니다";
   }
   if (scope === "graph" && message.includes("keyword_not_found")) {
     return "해당 키워드 그래프를 찾지 못했습니다";
@@ -71,6 +84,9 @@ export default function GraphPage() {
   const [marketInput, setMarketInput] = useState("");
   const [marketData, setMarketData] = useState<MarketTickerGraphResponse | null>(null);
   const [marketLoading, setMarketLoading] = useState(false);
+  const [marketBackfillRunning, setMarketBackfillRunning] = useState(false);
+  const [marketBackfillResult, setMarketBackfillResult] = useState<MarketGraphBackfillResponse | null>(null);
+  const [marketBackfillError, setMarketBackfillError] = useState("");
 
   const [error, setError] = useState("");
 
@@ -239,6 +255,27 @@ export default function GraphPage() {
     [loadMarketGraph]
   );
 
+  const handleMarketBackfill = useCallback(async () => {
+    setMarketBackfillRunning(true);
+    setMarketBackfillError("");
+    setMarketBackfillResult(null);
+    try {
+      const result = await backfillMarketGraph(0);
+      setMarketBackfillResult(result);
+
+      const reloadTicker = marketData?.focus_ticker ?? marketInput.trim();
+      if (reloadTicker) {
+        await loadMarketGraph(reloadTicker);
+      }
+    } catch (e) {
+      setMarketBackfillError(
+        toDisplayError(e instanceof Error ? e.message : "market_backfill_error", "market")
+      );
+    } finally {
+      setMarketBackfillRunning(false);
+    }
+  }, [loadMarketGraph, marketData, marketInput]);
+
   const loading =
     activeTab === "graph"
       ? graphLoading
@@ -405,6 +442,54 @@ export default function GraphPage() {
                   );
                 })}
               </div>
+
+              {user?.is_owner && (
+                <div
+                  style={{
+                    borderRadius: 12,
+                    border: "1px dashed #99f6e4",
+                    background: "#f0fdfa",
+                    padding: "12px 14px",
+                    display: "grid",
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: "0.84rem", fontWeight: 700, color: "#115e59" }}>관리자 도구</div>
+                      <div style={{ marginTop: 3, fontSize: "0.8rem", color: "#0f766e" }}>
+                        전체 기사 코퍼스를 `market_articles` projection으로 다시 동기화합니다.
+                      </div>
+                    </div>
+                    <button
+                      className="primary"
+                      onClick={() => void handleMarketBackfill()}
+                      disabled={marketBackfillRunning}
+                    >
+                      {marketBackfillRunning ? "백필 실행 중..." : "전체 기사 백필"}
+                    </button>
+                  </div>
+
+                  {marketBackfillError && (
+                    <div style={{ fontSize: "0.82rem", color: "#b42318" }}>{marketBackfillError}</div>
+                  )}
+
+                  {marketBackfillResult && (
+                    <div style={{ fontSize: "0.82rem", color: "#0f766e" }}>
+                      processed {marketBackfillResult.processed} · synced {marketBackfillResult.synced} · failed{" "}
+                      {marketBackfillResult.failed} · status {marketBackfillResult.status}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </section>
