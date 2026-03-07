@@ -83,6 +83,7 @@ export default function FeedItemCard({
           </button>
         </div>
 
+        <span className="action-divider" />
         <div className="actions">
           <button className="like" disabled={preferenceDone || preferencePending} onClick={() => onFeedback(item, "liked")}>
             Like

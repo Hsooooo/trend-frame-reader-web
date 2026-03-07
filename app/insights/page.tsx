@@ -455,7 +455,7 @@ export default function InsightsPage() {
         <section className="panel">
           <p className="meta">
             Insights를 보려면{" "}
-            <a href={`${API_BASE}/auth/google/login`} style={{ color: "#0f766e" }}>
+            <a href={`${API_BASE}/auth/google/login`}>
               Google로 로그인
             </a>
             하세요.

@@ -328,12 +328,12 @@ export default function GraphPage() {
 
   if (!authLoading && !user) {
     return (
-      <main style={{ maxWidth: 900, margin: "0 auto", padding: "16px" }}>
+      <main className="graph-page">
         <h1>북마크 그래프</h1>
         <section className="panel">
           <p className="meta">
             그래프를 보려면{" "}
-            <a href={`${API_BASE}/auth/google/login`} style={{ color: "#0f766e" }}>
+            <a href={`${API_BASE}/auth/google/login`}>
               Google로 로그인
             </a>
             하세요.
@@ -344,37 +344,23 @@ export default function GraphPage() {
   }
 
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: "16px" }}>
+    <main className="graph-page">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-        <h1 style={{ margin: 0 }}>북마크 그래프</h1>
-        <a
-          href="/"
-          style={{
-            fontSize: "0.875rem",
-            color: "#475467",
-            textDecoration: "none",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-            padding: "6px 12px",
-            border: "1px solid #d0d5dd",
-            borderRadius: 10,
-            background: "#fff",
-          }}
-        >
+      <div className="page-header">
+        <h1>북마크 그래프</h1>
+        <a href="/" className="back-btn">
           ← 피드로 돌아가기
         </a>
       </div>
-      <p style={{ margin: "0 0 16px", color: "#475467" }}>
+      <p className="meta" style={{ marginBottom: 16 }}>
         북마크를 기준으로 키워드 관계, 저장 시점 타임라인, 티커 기반 시장 엔티티 그래프를 함께 탐색합니다.
       </p>
 
       {/* Keyword cloud */}
       {(activeTab === "graph" || activeTab === "similarity") && cloud.length > 0 && (
         <section className="panel" style={{ marginBottom: 0 }}>
-          <div style={{ marginBottom: 8, fontWeight: 600, fontSize: "0.9rem", color: "#344054" }}>인기 키워드</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          <div className="keyword-cloud-title">인기 키워드</div>
+          <div className="keyword-cloud">
             {cloud.map((item) => {
               const isActive = item.keyword === activeKeyword;
               return (
@@ -388,21 +374,10 @@ export default function GraphPage() {
                       if (activeTab !== "graph") setActiveTab("graph");
                     }
                   }}
-                  style={{
-                    borderRadius: "999px",
-                    padding: "4px 12px",
-                    fontSize: "0.82rem",
-                    fontWeight: isActive ? 600 : 400,
-                    cursor: "pointer",
-                    border: isActive ? "1.5px solid #0f766e" : "1px solid #d0d5dd",
-                    background: isActive ? "#ccfbf1" : "#fff",
-                    color: isActive ? "#0f766e" : "#475467",
-                    transition: "background 0.15s, border-color 0.15s, color 0.15s",
-                    lineHeight: "1.4",
-                  }}
+                  className={`keyword-chip${isActive ? " active" : ""}`}
                 >
                   {item.keyword}
-                  <span style={{ marginLeft: 5, fontSize: "0.75rem", opacity: 0.65 }}>
+                  <span className="keyword-chip-freq">
                     {item.frequency}
                   </span>
                 </button>
@@ -415,7 +390,7 @@ export default function GraphPage() {
       {/* Search */}
       {activeTab !== "timeline" && (
         <section className="panel" style={{ marginTop: 10 }}>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="graph-search-row">
             <input
               type="text"
               placeholder={activeTab === "market" ? "미국 주식 티커 입력... (예: AAPL, NVDA)" : "키워드 직접 탐색..."}
@@ -428,17 +403,7 @@ export default function GraphPage() {
                 }
               }}
               onKeyDown={handleSearchKeyDown}
-              style={{
-                flex: 1,
-                border: "1px solid #d0d5dd",
-                borderRadius: 10,
-                padding: "8px 12px",
-                fontSize: "0.92rem",
-                color: "#101828",
-                background: "#fff",
-                outline: "none",
-                fontFamily: "inherit",
-              }}
+              className="graph-search-input"
             />
             <button
               className="primary"
@@ -451,10 +416,10 @@ export default function GraphPage() {
 
           {activeTab === "market" && (
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-              <div style={{ fontSize: "0.8rem", color: "#667085" }}>
+              <div className="market-note">
                 현재 market graph는 북마크로 저장한 기사만 기준으로 구성됩니다.
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <div className="keyword-cloud">
                 {MARKET_QUICK_TICKERS.map((ticker) => {
                   const isActive = marketData?.focus_ticker === ticker;
                   return (
@@ -464,17 +429,7 @@ export default function GraphPage() {
                         setMarketInput(ticker);
                         void loadMarketGraph(ticker);
                       }}
-                      style={{
-                        borderRadius: "999px",
-                        padding: "4px 12px",
-                        fontSize: "0.82rem",
-                        fontWeight: isActive ? 700 : 500,
-                        cursor: "pointer",
-                        border: isActive ? "1.5px solid #0f766e" : "1px solid #d0d5dd",
-                        background: isActive ? "#ccfbf1" : "#fff",
-                        color: isActive ? "#0f766e" : "#475467",
-                        lineHeight: "1.4",
-                      }}
+                      className={`keyword-chip${isActive ? " active" : ""}`}
                     >
                       {ticker}
                     </button>
@@ -483,28 +438,11 @@ export default function GraphPage() {
               </div>
 
               {user?.is_owner && (
-                <div
-                  style={{
-                    borderRadius: 12,
-                    border: "1px dashed #99f6e4",
-                    background: "#f0fdfa",
-                    padding: "12px 14px",
-                    display: "grid",
-                    gap: 10,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      flexWrap: "wrap",
-                    }}
-                  >
+                <div className="admin-tool-box">
+                  <div className="admin-tool-header">
                     <div>
-                      <div style={{ fontSize: "0.84rem", fontWeight: 700, color: "#115e59" }}>관리자 도구</div>
-                      <div style={{ marginTop: 3, fontSize: "0.8rem", color: "#0f766e" }}>
+                      <div className="admin-tool-title">관리자 도구</div>
+                      <div className="admin-tool-desc">
                         전체 기사 코퍼스를 `market_articles` projection으로 다시 동기화합니다.
                       </div>
                     </div>
@@ -522,40 +460,29 @@ export default function GraphPage() {
                   </div>
 
                   {marketBackfillError && (
-                    <div style={{ fontSize: "0.82rem", color: "#b42318" }}>{marketBackfillError}</div>
+                    <div className="admin-tool-error">{marketBackfillError}</div>
                   )}
 
                   {marketBackfillJob && (
                     <div style={{ display: "grid", gap: 8 }}>
-                      <div
-                        style={{
-                          height: 10,
-                          borderRadius: 999,
-                          background: "#ccfbf1",
-                          overflow: "hidden",
-                        }}
-                      >
+                      <div className="progress-bar-track">
                         <div
-                          style={{
-                            width: `${marketBackfillPct}%`,
-                            height: "100%",
-                            background: marketBackfillJob.status === "paused" ? "#f59e0b" : "#0f766e",
-                            transition: "width 0.2s ease",
-                          }}
+                          className={`progress-bar-fill${marketBackfillJob.status === "paused" ? " progress-bar-fill--paused" : ""}`}
+                          style={{ width: `${marketBackfillPct}%` }}
                         />
                       </div>
-                      <div style={{ fontSize: "0.82rem", color: "#0f766e" }}>
+                      <div className="progress-info">
                         job #{marketBackfillJob.job_id} · {marketBackfillJob.status} · {marketBackfillJob.processed}/
                         {marketBackfillJob.total} ({marketBackfillPct}%)
                       </div>
-                      <div style={{ fontSize: "0.8rem", color: "#115e59" }}>
+                      <div className="progress-detail">
                         synced {marketBackfillJob.synced} · failed {marketBackfillJob.failed}
                         {typeof marketBackfillJob.last_item_id === "number"
                           ? ` · last_item_id ${marketBackfillJob.last_item_id}`
                           : ""}
                       </div>
                       {marketBackfillJob.paused_until && (
-                        <div style={{ fontSize: "0.8rem", color: "#b54708" }}>
+                        <div className="progress-warning">
                           paused until{" "}
                           {new Date(marketBackfillJob.paused_until).toLocaleString("ko-KR", {
                             timeZone: "Asia/Seoul",
@@ -563,7 +490,7 @@ export default function GraphPage() {
                         </div>
                       )}
                       {marketBackfillJob.error_message && (
-                        <div style={{ fontSize: "0.8rem", color: "#667085" }}>
+                        <div className="progress-note">
                           {marketBackfillJob.error_message}
                         </div>
                       )}
@@ -584,74 +511,50 @@ export default function GraphPage() {
       {/* Content area */}
       <section className="panel" style={{ marginTop: 0, padding: "14px 14px 20px", borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: "none" }}>
         {/* Status bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "#344054" }}>
+        <div className="graph-status-bar">
+          <div className="graph-status-label">
             {(activeTab === "graph" || activeTab === "similarity") && activeKeyword ? (
               <>
-                <span
-                  style={{
-                    display: "inline-block",
-                    background: "#ccfbf1",
-                    color: "#0f766e",
-                    border: "1px solid #5eead4",
-                    borderRadius: "999px",
-                    padding: "2px 10px",
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    marginRight: 6,
-                  }}
-                >
+                <span className="status-keyword-pill">
                   {activeKeyword}
                 </span>
                 {activeTab === "graph" && graphData && (
-                  <span style={{ fontSize: "0.82rem", color: "#475467", fontWeight: 400 }}>
+                  <span className="status-info">
                     키워드 {graphData.keyword_nodes.length}개 · 기사 {graphData.article_nodes.length}개
                   </span>
                 )}
                 {activeTab === "similarity" && simGraphData && (
-                  <span style={{ fontSize: "0.82rem", color: "#475467", fontWeight: 400 }}>
+                  <span className="status-info">
                     키워드 {simGraphData.keyword_nodes.length}개 · 기사 {simGraphData.article_nodes.length}개
                   </span>
                 )}
               </>
             ) : activeTab === "market" && marketData ? (
               <>
-                <span
-                  style={{
-                    display: "inline-block",
-                    background: "#ecfeff",
-                    color: "#0f766e",
-                    border: "1px solid #99f6e4",
-                    borderRadius: "999px",
-                    padding: "2px 10px",
-                    fontSize: "0.85rem",
-                    fontWeight: 700,
-                    marginRight: 6,
-                  }}
-                >
+                <span className="status-market-pill">
                   {marketData.focus_ticker}
                 </span>
-                <span style={{ fontSize: "0.82rem", color: "#475467", fontWeight: 400 }}>
+                <span className="status-info">
                   기사 {marketData.article_nodes.length}건 · 기업 {marketData.company_nodes.length}개 · 이벤트 {marketData.event_nodes.length}개
                 </span>
               </>
             ) : activeTab === "timeline" ? (
-              <span style={{ color: "#475467", fontWeight: 400 }}>
+              <span className="status-info">
                 최근 30일 저장 기사{timelineData ? ` · ${timelineData.articles.length}건` : ""}
               </span>
             ) : (
-              <span style={{ color: "#475467", fontWeight: 400 }}>
+              <span className="status-info">
                 {activeTab === "market" ? "티커를 입력해 시장 엔티티 그래프를 불러오세요" : "키워드를 선택하거나 검색하세요"}
               </span>
             )}
           </div>
           {loading && (
-            <span style={{ fontSize: "0.82rem", color: "#475467" }}>불러오는 중...</span>
+            <span className="graph-loading-text">불러오는 중...</span>
           )}
         </div>
 
         {error && (
-          <p style={{ color: "#b42318", fontSize: "0.88rem", margin: "0 0 10px" }}>{error}</p>
+          <p className="graph-error">{error}</p>
         )}
 
         {/* Graph view */}
@@ -661,31 +564,18 @@ export default function GraphPage() {
               <GraphView data={graphData} onKeywordClick={handleKeywordClick} isMobile={isMobile} />
             ) : (
               !graphLoading && !error && (
-                <div
-                  style={{
-                    width: "100%",
-                    height: 540,
-                    background: "#f8fafc",
-                    borderRadius: 10,
-                    border: "1px solid #e2e8f0",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#94a3b8",
-                    fontSize: "0.9rem",
-                  }}
-                >
+                <div className="graph-placeholder">
                   그래프가 여기에 표시됩니다
                 </div>
               )
             )}
             {graphData && (
-              <p style={{ margin: "10px 0 0", fontSize: "0.78rem", color: "#94a3b8", textAlign: "center" }}>
+              <p className="graph-hint">
                 노드를 드래그하거나 클릭해서 탐색하세요
               </p>
             )}
             {graphData && isMobile && (
-              <p style={{ margin: "6px 0 0", fontSize: "0.78rem", color: "#94a3b8", textAlign: "center" }}>
+              <p className="graph-hint">
                 모바일 최적화 모드 · 상위 15개 키워드
               </p>
             )}
@@ -699,26 +589,13 @@ export default function GraphPage() {
               <SimilarityGraphView data={simGraphData} onKeywordClick={handleKeywordClick} isMobile={isMobile} />
             ) : (
               !simGraphLoading && !error && (
-                <div
-                  style={{
-                    width: "100%",
-                    height: 540,
-                    background: "#f8fafc",
-                    borderRadius: 10,
-                    border: "1px solid #e2e8f0",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#94a3b8",
-                    fontSize: "0.9rem",
-                  }}
-                >
+                <div className="graph-placeholder">
                   키워드를 선택하거나 검색하세요
                 </div>
               )
             )}
             {simGraphData && (
-              <p style={{ margin: "10px 0 0", fontSize: "0.78rem", color: "#94a3b8", textAlign: "center" }}>
+              <p className="graph-hint">
                 노드를 드래그하거나 클릭해서 탐색하세요 · 선 굵기는 의미적 유사도를 나타냅니다
               </p>
             )}
@@ -732,26 +609,13 @@ export default function GraphPage() {
               <TimelineView data={timelineData} />
             ) : (
               !timelineLoading && !error && (
-                <div
-                  style={{
-                    width: "100%",
-                    height: 340,
-                    background: "#f8fafc",
-                    borderRadius: 10,
-                    border: "1px solid #e2e8f0",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#94a3b8",
-                    fontSize: "0.9rem",
-                  }}
-                >
+                <div className="graph-placeholder graph-placeholder--short">
                   타임라인을 불러오는 중...
                 </div>
               )
             )}
             {timelineData && (
-              <p style={{ margin: "10px 0 0", fontSize: "0.78rem", color: "#94a3b8", textAlign: "center" }}>
+              <p className="graph-hint">
                 기사를 클릭하면 원문을 엽니다
               </p>
             )}
@@ -765,28 +629,13 @@ export default function GraphPage() {
               <MarketGraphView data={marketData} onTickerClick={handleMarketTickerClick} />
             ) : (
               !marketLoading && !error && (
-                <div
-                  style={{
-                    width: "100%",
-                    minHeight: 340,
-                    background: "#f8fafc",
-                    borderRadius: 10,
-                    border: "1px solid #e2e8f0",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#94a3b8",
-                    fontSize: "0.9rem",
-                    padding: "24px 20px",
-                    textAlign: "center",
-                  }}
-                >
+                <div className="graph-placeholder graph-placeholder--short" style={{ padding: "24px 20px", textAlign: "center" }}>
                   저장한 기사에 연결된 미국 티커를 입력하면 기사·기업·이벤트·테마 관계를 보여줍니다
                 </div>
               )
             )}
             {marketData && (
-              <p style={{ margin: "10px 0 0", fontSize: "0.78rem", color: "#94a3b8", textAlign: "center" }}>
+              <p className="graph-hint">
                 기사 안의 티커 배지를 누르면 해당 종목으로 그래프를 다시 불러옵니다
               </p>
             )}

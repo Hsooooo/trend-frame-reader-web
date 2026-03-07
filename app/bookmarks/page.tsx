@@ -49,7 +49,7 @@ export default function BookmarksPage() {
         <section className="panel">
           <p className="meta">
             북마크를 보려면{" "}
-            <a href={`${API_BASE}/auth/google/login`} style={{ color: "#0f766e" }}>
+            <a href={`${API_BASE}/auth/google/login`}>
               Google로 로그인
             </a>
             하세요.
