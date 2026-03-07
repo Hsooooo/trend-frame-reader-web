@@ -231,8 +231,11 @@ export async function fetchMarketTickerGraph(
   return (await res.json()) as MarketTickerGraphResponse;
 }
 
-export async function backfillMarketGraph(limit = 0): Promise<MarketGraphBackfillResponse> {
-  const qs = new URLSearchParams({ limit: String(limit) });
+export async function backfillMarketGraph(
+  limit = 0,
+  scope: "bookmarks" | "all" = "bookmarks"
+): Promise<MarketGraphBackfillResponse> {
+  const qs = new URLSearchParams({ limit: String(limit), scope });
   const res = await fetch(`${API_BASE}/admin/market/backfill?${qs.toString()}`, {
     ...DEFAULT_OPTS,
     method: "POST",

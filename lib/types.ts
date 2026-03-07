@@ -250,6 +250,7 @@ export type MarketTickerGraphResponse = {
 export type MarketGraphBackfillResponse = {
   job_id: number;
   job_type: string;
+  scope: "bookmarks" | "all" | string;
   total: number;
   processed: number;
   synced: number;

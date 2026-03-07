@@ -299,7 +299,7 @@ export default function GraphPage() {
   const handleMarketBackfill = useCallback(async () => {
     setMarketBackfillError("");
     try {
-      const job = await backfillMarketGraph(0);
+      const job = await backfillMarketGraph(0, "bookmarks");
       setMarketBackfillJob(job);
     } catch (e) {
       setMarketBackfillError(
@@ -440,10 +440,10 @@ export default function GraphPage() {
               {user?.is_owner && (
                 <div className="admin-tool-box">
                   <div className="admin-tool-header">
-                    <div>
+                      <div>
                       <div className="admin-tool-title">관리자 도구</div>
                       <div className="admin-tool-desc">
-                        전체 기사 코퍼스를 `market_articles` projection으로 다시 동기화합니다.
+                        현재 로그인한 사용자의 저장 기사만 `market_articles` projection으로 다시 동기화합니다.
                       </div>
                     </div>
                     <button
@@ -455,7 +455,7 @@ export default function GraphPage() {
                         ? "백필 재개 대기 중..."
                         : marketBackfillActive
                         ? "백필 실행 중..."
-                        : "전체 기사 백필"}
+                        : "내 북마크 백필"}
                     </button>
                   </div>
 
@@ -472,7 +472,7 @@ export default function GraphPage() {
                         />
                       </div>
                       <div className="progress-info">
-                        job #{marketBackfillJob.job_id} · {marketBackfillJob.status} · {marketBackfillJob.processed}/
+                        job #{marketBackfillJob.job_id} · {marketBackfillJob.scope} · {marketBackfillJob.status} · {marketBackfillJob.processed}/
                         {marketBackfillJob.total} ({marketBackfillPct}%)
                       </div>
                       <div className="progress-detail">
