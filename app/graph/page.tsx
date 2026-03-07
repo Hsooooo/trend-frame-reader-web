@@ -10,6 +10,7 @@ import TimelineView from "./components/timeline-view";
 import {
   backfillMarketGraph,
   fetchFullGraph,
+  fetchMarketBackfillJob,
   fetchMarketTickerGraph,
   fetchSimilarityGraph,
   fetchTimeline,
@@ -40,6 +41,9 @@ type KeywordCloudResponse = {
 function toDisplayError(message: string, scope: "graph" | "timeline" | "market"): string {
   if (message.includes("not_owner")) {
     return "관리자 권한이 필요합니다";
+  }
+  if (message.includes("market_backfill_job_not_found")) {
+    return "시장 그래프 백필 작업을 찾지 못했습니다";
   }
   if (message.includes("ticker_required")) {
     return "미국 주식 티커를 입력하세요";
@@ -84,8 +88,7 @@ export default function GraphPage() {
   const [marketInput, setMarketInput] = useState("");
   const [marketData, setMarketData] = useState<MarketTickerGraphResponse | null>(null);
   const [marketLoading, setMarketLoading] = useState(false);
-  const [marketBackfillRunning, setMarketBackfillRunning] = useState(false);
-  const [marketBackfillResult, setMarketBackfillResult] = useState<MarketGraphBackfillResponse | null>(null);
+  const [marketBackfillJob, setMarketBackfillJob] = useState<MarketGraphBackfillResponse | null>(null);
   const [marketBackfillError, setMarketBackfillError] = useState("");
 
   const [error, setError] = useState("");
@@ -95,6 +98,44 @@ export default function GraphPage() {
   useEffect(() => {
     setIsMobile(window.matchMedia("(max-width: 768px)").matches);
   }, []);
+
+  useEffect(() => {
+    if (authLoading || !user?.is_owner) return;
+    void (async () => {
+      try {
+        const job = await fetchMarketBackfillJob();
+        setMarketBackfillJob(job);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "market_backfill_status_error";
+        if (!message.includes("market_backfill_job_not_found")) {
+          setMarketBackfillError(toDisplayError(message, "market"));
+        }
+      }
+    })();
+  }, [authLoading, user]);
+
+  useEffect(() => {
+    if (!user?.is_owner || !marketBackfillJob) return;
+    if (!["queued", "running", "paused"].includes(marketBackfillJob.status)) return;
+
+    const timer = window.setInterval(() => {
+      void (async () => {
+        try {
+          const next = await fetchMarketBackfillJob(marketBackfillJob.job_id);
+          setMarketBackfillJob(next);
+        } catch (e) {
+          setMarketBackfillError(
+            toDisplayError(
+              e instanceof Error ? e.message : "market_backfill_status_error",
+              "market"
+            )
+          );
+        }
+      })();
+    }, 2000);
+
+    return () => window.clearInterval(timer);
+  }, [marketBackfillJob, user]);
 
   // ── Load graph ──────────────────────────────────────────────────────────────
 
@@ -256,25 +297,16 @@ export default function GraphPage() {
   );
 
   const handleMarketBackfill = useCallback(async () => {
-    setMarketBackfillRunning(true);
     setMarketBackfillError("");
-    setMarketBackfillResult(null);
     try {
-      const result = await backfillMarketGraph(0);
-      setMarketBackfillResult(result);
-
-      const reloadTicker = marketData?.focus_ticker ?? marketInput.trim();
-      if (reloadTicker) {
-        await loadMarketGraph(reloadTicker);
-      }
+      const job = await backfillMarketGraph(0);
+      setMarketBackfillJob(job);
     } catch (e) {
       setMarketBackfillError(
         toDisplayError(e instanceof Error ? e.message : "market_backfill_error", "market")
       );
-    } finally {
-      setMarketBackfillRunning(false);
     }
-  }, [loadMarketGraph, marketData, marketInput]);
+  }, []);
 
   const loading =
     activeTab === "graph"
@@ -284,6 +316,13 @@ export default function GraphPage() {
       : activeTab === "timeline"
       ? timelineLoading
       : marketLoading;
+
+  const marketBackfillActive = marketBackfillJob
+    ? ["queued", "running", "paused"].includes(marketBackfillJob.status)
+    : false;
+  const marketBackfillPct = marketBackfillJob?.total
+    ? Math.min(100, Math.round((marketBackfillJob.processed / marketBackfillJob.total) * 100))
+    : 0;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -472,9 +511,13 @@ export default function GraphPage() {
                     <button
                       className="primary"
                       onClick={() => void handleMarketBackfill()}
-                      disabled={marketBackfillRunning}
+                      disabled={marketBackfillActive}
                     >
-                      {marketBackfillRunning ? "백필 실행 중..." : "전체 기사 백필"}
+                      {marketBackfillJob?.status === "paused"
+                        ? "백필 재개 대기 중..."
+                        : marketBackfillActive
+                        ? "백필 실행 중..."
+                        : "전체 기사 백필"}
                     </button>
                   </div>
 
@@ -482,10 +525,48 @@ export default function GraphPage() {
                     <div style={{ fontSize: "0.82rem", color: "#b42318" }}>{marketBackfillError}</div>
                   )}
 
-                  {marketBackfillResult && (
-                    <div style={{ fontSize: "0.82rem", color: "#0f766e" }}>
-                      processed {marketBackfillResult.processed} · synced {marketBackfillResult.synced} · failed{" "}
-                      {marketBackfillResult.failed} · status {marketBackfillResult.status}
+                  {marketBackfillJob && (
+                    <div style={{ display: "grid", gap: 8 }}>
+                      <div
+                        style={{
+                          height: 10,
+                          borderRadius: 999,
+                          background: "#ccfbf1",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${marketBackfillPct}%`,
+                            height: "100%",
+                            background: marketBackfillJob.status === "paused" ? "#f59e0b" : "#0f766e",
+                            transition: "width 0.2s ease",
+                          }}
+                        />
+                      </div>
+                      <div style={{ fontSize: "0.82rem", color: "#0f766e" }}>
+                        job #{marketBackfillJob.job_id} · {marketBackfillJob.status} · {marketBackfillJob.processed}/
+                        {marketBackfillJob.total} ({marketBackfillPct}%)
+                      </div>
+                      <div style={{ fontSize: "0.8rem", color: "#115e59" }}>
+                        synced {marketBackfillJob.synced} · failed {marketBackfillJob.failed}
+                        {typeof marketBackfillJob.last_item_id === "number"
+                          ? ` · last_item_id ${marketBackfillJob.last_item_id}`
+                          : ""}
+                      </div>
+                      {marketBackfillJob.paused_until && (
+                        <div style={{ fontSize: "0.8rem", color: "#b54708" }}>
+                          paused until{" "}
+                          {new Date(marketBackfillJob.paused_until).toLocaleString("ko-KR", {
+                            timeZone: "Asia/Seoul",
+                          })}
+                        </div>
+                      )}
+                      {marketBackfillJob.error_message && (
+                        <div style={{ fontSize: "0.8rem", color: "#667085" }}>
+                          {marketBackfillJob.error_message}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

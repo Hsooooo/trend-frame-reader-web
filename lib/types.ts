@@ -241,10 +241,19 @@ export type MarketTickerGraphResponse = {
 };
 
 export type MarketGraphBackfillResponse = {
+  job_id: number;
+  job_type: string;
+  total: number;
   processed: number;
   synced: number;
   failed: number;
   status: string;
+  last_item_id?: number | null;
+  limit?: number | null;
+  started_at?: string | null;
+  ended_at?: string | null;
+  paused_until?: string | null;
+  error_message?: string | null;
 };
 
 // ── Insight Post types ────────────────────────────────────────────────────────

@@ -223,6 +223,20 @@ export async function backfillMarketGraph(limit = 0): Promise<MarketGraphBackfil
   return (await res.json()) as MarketGraphBackfillResponse;
 }
 
+export async function fetchMarketBackfillJob(jobId?: number): Promise<MarketGraphBackfillResponse> {
+  const qs = new URLSearchParams();
+  if (typeof jobId === "number") qs.set("job_id", String(jobId));
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  const res = await fetch(`${API_BASE}/admin/market/backfill${suffix}`, {
+    ...DEFAULT_OPTS,
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(await toErrorCode(res, "market_backfill_status_error"));
+  }
+  return (await res.json()) as MarketGraphBackfillResponse;
+}
+
 // ── Insight Posts (Public) ──────────────────────────────────────────────────
 
 export async function fetchInsightPosts(limit = 20, offset = 0): Promise<InsightListResponse> {
