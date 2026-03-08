@@ -362,6 +362,23 @@ a:hover {
   opacity: 0.9;
 }
 
+.item-title {
+  color: var(--color-info-700);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.item-title.blocked {
+  color: var(--text);
+  cursor: default;
+}
+
+.item-summary {
+  margin: var(--space-2) 0 0;
+  color: var(--text);
+  line-height: 1.6;
+}
+
 .status {
   margin-top: var(--space-2);
   display: flex;
@@ -444,6 +461,12 @@ a:hover {
   color: var(--text-secondary);
   border: 1px solid var(--color-gray-300);
   font-weight: 500;
+}
+
+.badge.ticker {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
 }
 
 .keywords {

@@ -37,6 +37,7 @@ export default function FeedItemCard({
 
   const displayTitle = item.translated_title_ko?.trim() ? item.translated_title_ko : item.title;
   const hasTranslatedTitle = Boolean(item.translated_title_ko && item.translated_title_ko !== item.title);
+  const hasSummary = Boolean(item.summary?.trim());
   const publishedLabel = item.published_at
     ? new Date(item.published_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })
     : null;
@@ -49,14 +50,28 @@ export default function FeedItemCard({
       </div>
 
       <div>
-        <a href={item.url} target="_blank" rel="noreferrer" onClick={() => onClickItem(item.item_id)}>
-          {displayTitle}
-        </a>
+        {item.link_disabled ? (
+          <span className="item-title blocked">{displayTitle}</span>
+        ) : (
+          <a className="item-title" href={item.url} target="_blank" rel="noreferrer" onClick={() => onClickItem(item.item_id)}>
+            {displayTitle}
+          </a>
+        )}
       </div>
 
       {hasTranslatedTitle && <div className="meta original-title">EN: {item.title}</div>}
       {publishedLabel && <div className="meta">Published {publishedLabel}</div>}
       <div className="meta">{item.short_reason}</div>
+      {item.link_disabled && <div className="meta">원문 링크는 피드에서 열 수 없도록 차단되어 있습니다.</div>}
+      {hasSummary && <p className="item-summary">{item.summary}</p>}
+
+      {item.tickers && item.tickers.length > 0 && (
+        <div className="keywords">
+          {item.tickers.slice(0, 6).map((ticker) => (
+            <span key={ticker} className="badge ticker">{ticker}</span>
+          ))}
+        </div>
+      )}
 
       {item.keywords && item.keywords.length > 0 && (
         <div className="keywords">

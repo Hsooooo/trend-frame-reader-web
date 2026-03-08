@@ -189,7 +189,7 @@ export default function FeedClient({
 
         {activeTab === "stocks" && (
           <p className="meta" style={{ marginTop: 8 }}>
-            Alpaca News, SEC RSS, EDGAR RSS 기반 최신 기사 순으로 노출됩니다. 저장하거나 건너뛰어도 목록에서 제외하지 않습니다.
+            Alpaca News, ReleaseWire, SEC RSS, EDGAR RSS 기반 최신 기사 순으로 노출됩니다. Alpaca News 링크는 피드에서 차단되며, 저장하거나 건너뛰어도 목록에서 제외하지 않습니다.
           </p>
         )}
 

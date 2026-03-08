@@ -8,10 +8,12 @@ export type FeedItem = {
   item_id: number;
   title: string;
   translated_title_ko?: string | null;
+  summary?: string | null;
   published_at?: string | null;
   source: string;
   category: string;
   url: string;
+  link_disabled?: boolean;
   short_reason: string;
   rank: number;
   saved: boolean;
@@ -22,6 +24,7 @@ export type FeedItem = {
   preference_action?: PreferenceAction | null;
   feedback_action?: string | null;
   keywords?: string[];
+  tickers?: string[];
 };
 
 export type FeedGroup = {
