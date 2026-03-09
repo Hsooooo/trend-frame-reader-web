@@ -9,7 +9,18 @@ import { FeedGroup, FeedItem, FeedbackAction } from "../lib/types";
 import { useAuth } from "../app/context/auth";
 
 type FeedTab = "curated" | "stocks";
-type FeedState = { generated_at: string | null; groups: FeedGroup[] } | null;
+type BaseFeedState = { generated_at: string | null; groups: FeedGroup[] };
+type CuratedFeedState = BaseFeedState | null;
+type StockFeedState = (BaseFeedState & {
+  page: number;
+  size: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}) | null;
+
+const STOCK_PAGE_SIZE = 20;
 
 function categoryLabel(key: string): string {
   const map: Record<string, string> = {
@@ -42,12 +53,12 @@ export default function FeedClient({
   initialCuratedFeed,
   initialStockFeed,
 }: {
-  initialCuratedFeed: FeedState;
-  initialStockFeed: FeedState;
+  initialCuratedFeed: CuratedFeedState;
+  initialStockFeed: StockFeedState;
 }) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<FeedTab>("curated");
-  const [feeds, setFeeds] = useState<Record<FeedTab, FeedState>>({
+  const [feeds, setFeeds] = useState<{ curated: CuratedFeedState; stocks: StockFeedState }>({
     curated: initialCuratedFeed ?? null,
     stocks: initialStockFeed ?? null,
   });
@@ -62,25 +73,47 @@ export default function FeedClient({
     return new Date(activeFeed.generated_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
   }, [activeFeed?.generated_at]);
 
-  const loadFeed = async (tab: FeedTab) => {
+  const loadFeed = async (tab: FeedTab, page = 1) => {
     setLoading(true);
     setError("");
     try {
-      const data = tab === "curated" ? await fetchTodayFeed() : await fetchStockFeed();
-      const fallbackCategory = tab === "curated" ? "general" : "stock-feed";
-      const groups =
-        data.groups && data.groups.length > 0
-          ? data.groups
-          : data.items && data.items.length > 0
-            ? [{ category: fallbackCategory, items: data.items }]
-            : [];
-      setFeeds((prev) => ({
-        ...prev,
-        [tab]: {
-          generated_at: data.generated_at ?? null,
-          groups,
-        },
-      }));
+      if (tab === "curated") {
+        const data = await fetchTodayFeed();
+        const groups =
+          data.groups && data.groups.length > 0
+            ? data.groups
+            : data.items && data.items.length > 0
+              ? [{ category: "general", items: data.items }]
+              : [];
+        setFeeds((prev) => ({
+          ...prev,
+          curated: {
+            generated_at: data.generated_at ?? null,
+            groups,
+          },
+        }));
+      } else {
+        const data = await fetchStockFeed(page, STOCK_PAGE_SIZE);
+        const groups =
+          data.groups && data.groups.length > 0
+            ? data.groups
+            : data.items && data.items.length > 0
+              ? [{ category: "stock-feed", items: data.items }]
+              : [];
+        setFeeds((prev) => ({
+          ...prev,
+          stocks: {
+            generated_at: data.generated_at ?? null,
+            groups,
+            page: data.page,
+            size: data.size,
+            total: data.total,
+            total_pages: data.total_pages,
+            has_next: data.has_next,
+            has_prev: data.has_prev,
+          },
+        }));
+      }
     } catch (e) {
       setFeeds((prev) => ({ ...prev, [tab]: null }));
       const code = e instanceof Error ? e.message : "feed_load_failed";
@@ -95,7 +128,8 @@ export default function FeedClient({
   };
 
   const loadActiveFeed = async () => {
-    await loadFeed(activeTab);
+    const stockPage = feeds.stocks?.page ?? 1;
+    await loadFeed(activeTab, activeTab === "stocks" ? stockPage : 1);
   };
 
   const handleFeedback = async (item: FeedItem, action: FeedbackAction) => {
@@ -116,7 +150,8 @@ export default function FeedClient({
     setPendingMap((prev) => ({ ...prev, [pendingKey]: true }));
     try {
       await sendFeedback(item.item_id, action);
-      await loadFeed(activeTab);
+      const stockPage = feeds.stocks?.page ?? 1;
+      await loadFeed(activeTab, activeTab === "stocks" ? stockPage : 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : "feedback_error");
     } finally {
@@ -132,9 +167,14 @@ export default function FeedClient({
 
   useEffect(() => {
     if (!feeds[activeTab]) {
-      void loadFeed(activeTab);
+      const stockPage = feeds.stocks?.page ?? 1;
+      void loadFeed(activeTab, activeTab === "stocks" ? stockPage : 1);
     }
   }, [activeTab, feeds]);
+
+  const loadStockPage = async (targetPage: number) => {
+    await loadFeed("stocks", targetPage);
+  };
 
   const panelTitle = activeTab === "curated" ? "오늘 피드" : "주식 뉴스 피드";
   const panelSubTitle = activeTab === "curated" ? currentPeriodLabel() : "최신순";
@@ -188,9 +228,30 @@ export default function FeedClient({
         {error && <p className="error">{error}</p>}
 
         {activeTab === "stocks" && (
-          <p className="meta" style={{ marginTop: 8 }}>
-            Alpaca News, ReleaseWire, SEC RSS, EDGAR RSS 기반 최신 기사 순으로 노출됩니다. Alpaca News 링크는 피드에서 차단되며, 저장하거나 건너뛰어도 목록에서 제외하지 않습니다.
-          </p>
+          <>
+            <p className="meta" style={{ marginTop: 8 }}>
+              Alpaca News, ReleaseWire, SEC RSS, EDGAR RSS 기반 최신 기사 순으로 노출됩니다. Alpaca News 링크는 피드에서 차단되며, 저장하거나 건너뛰어도 목록에서 제외하지 않습니다.
+            </p>
+            <div className="pager">
+              <button
+                onClick={() => void loadStockPage(Math.max(1, (feeds.stocks?.page ?? 1) - 1))}
+                disabled={loading || !feeds.stocks?.has_prev}
+              >
+                이전
+              </button>
+              <span className="meta">
+                {feeds.stocks && feeds.stocks.total_pages > 0
+                  ? `${feeds.stocks.page} / ${feeds.stocks.total_pages} · Total ${feeds.stocks.total}`
+                  : "0 / 0 · Total 0"}
+              </span>
+              <button
+                onClick={() => void loadStockPage((feeds.stocks?.page ?? 1) + 1)}
+                disabled={loading || !feeds.stocks?.has_next}
+              >
+                다음
+              </button>
+            </div>
+          </>
         )}
 
         {activeFeed?.groups.map((group) => (

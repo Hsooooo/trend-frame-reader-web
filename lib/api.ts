@@ -67,18 +67,20 @@ export async function fetchTodayFeedServer(): Promise<FeedResponse | null> {
   }
 }
 
-export async function fetchStockFeed(): Promise<StockFeedResponse> {
-  const res = await fetch(`${API_BASE}/feeds/stocks`, { ...DEFAULT_OPTS, cache: "no-store" });
+export async function fetchStockFeed(page = 1, size = 20): Promise<StockFeedResponse> {
+  const qs = new URLSearchParams({ page: String(page), size: String(size) });
+  const res = await fetch(`${API_BASE}/feeds/stocks?${qs.toString()}`, { ...DEFAULT_OPTS, cache: "no-store" });
   if (!res.ok) {
     throw new Error(await toErrorCode(res, "stock_feed_error"));
   }
   return (await res.json()) as StockFeedResponse;
 }
 
-export async function fetchStockFeedServer(): Promise<StockFeedResponse | null> {
+export async function fetchStockFeedServer(page = 1, size = 20): Promise<StockFeedResponse | null> {
   const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
   try {
-    const res = await fetch(`${API}/feeds/stocks`, { cache: "no-store" });
+    const qs = new URLSearchParams({ page: String(page), size: String(size) });
+    const res = await fetch(`${API}/feeds/stocks?${qs.toString()}`, { cache: "no-store" });
     if (!res.ok) return null;
     return (await res.json()) as StockFeedResponse;
   } catch {

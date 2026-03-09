@@ -41,6 +41,12 @@ export type FeedResponse = {
 };
 
 export type StockFeedResponse = {
+  page: number;
+  size: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
   generated_at?: string | null;
   items: FeedItem[];
   groups?: FeedGroup[];
