@@ -189,7 +189,10 @@ export default function FeedClient({
     />
     <main>
       <div className="feed-header">
-        <h1>Trend Frame Reader</h1>
+        <div>
+          <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 800, letterSpacing: '-0.02em' }}>Daily Briefing</h1>
+          <p style={{ marginTop: 'var(--space-1)' }}>Curated intelligence for your perspective.</p>
+        </div>
         <div className="feed-header-actions">
           <a href="/ask" className="feed-shortcut">
             Q&amp;A →
@@ -199,7 +202,7 @@ export default function FeedClient({
           </a>
         </div>
       </div>
-      <p>{panelSubTitle} · 업데이트: {generatedLabel}</p>
+      <p style={{ marginTop: 'var(--space-2)' }}>{panelSubTitle} · 업데이트: {generatedLabel}</p>
 
       <section className="panel">
         <div className="tab-bar" style={{ marginBottom: 12 }}>

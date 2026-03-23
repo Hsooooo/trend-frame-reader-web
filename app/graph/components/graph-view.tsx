@@ -38,13 +38,13 @@ function keywordRadius(freq: number): number {
 function keywordFill(sentiment: number): string {
   if (sentiment > 0.3) return "#86efac";
   if (sentiment < -0.3) return "#fca5a5";
-  return "#0f766e";
+  return "#1d2a3d";
 }
 
 function keywordStroke(sentiment: number): string {
   if (sentiment > 0.3) return "#4ade80";
   if (sentiment < -0.3) return "#f87171";
-  return "#0d9488";
+  return "#344054";
 }
 
 function truncate(text: string, max: number): string {
@@ -90,8 +90,8 @@ export default function GraphView({ data, onKeywordClick, isMobile }: GraphViewP
         label: truncate(art.title, 20),
         url: art.url,
         radius: 8,
-        fillColor: "#60a5fa",
-        strokeColor: "#3b82f6",
+        fillColor: "#afcbd8",
+        strokeColor: "#48626e",
       };
       nodes.push(node);
       nodeMap.set(art.id, node);
@@ -181,7 +181,7 @@ export default function GraphView({ data, onKeywordClick, isMobile }: GraphViewP
       .data(links)
       .enter()
       .append("line")
-      .attr("stroke", (d) => (d.edgeType === "cooccurrence" ? "#d0d5dd" : "#bfdbfe"))
+      .attr("stroke", (d) => (d.edgeType === "cooccurrence" ? "#c4c6ce" : "#cbe7f5"))
       .attr("stroke-width", (d) =>
         d.edgeType === "cooccurrence" ? Math.max(1, Math.min(5, d.weight * 0.6)) : 1
       )
@@ -230,7 +230,7 @@ export default function GraphView({ data, onKeywordClick, isMobile }: GraphViewP
       .attr("text-anchor", "middle")
       .attr("dy", (d) => d.radius + 14)
       .attr("font-size", (d) => (d.kind === "keyword" ? "12px" : "10px"))
-      .attr("fill", (d) => (d.kind === "keyword" ? "#101828" : "#475467"))
+      .attr("fill", (d) => (d.kind === "keyword" ? "#191c1e" : "#43474d"))
       .attr("font-weight", (d) => (d.kind === "keyword" ? "600" : "400"))
       .attr("font-family", "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif")
       .text((d) => d.label);
@@ -294,9 +294,9 @@ export default function GraphView({ data, onKeywordClick, isMobile }: GraphViewP
       style={{
         width: "100%",
         height: 540,
-        background: "#f8fafc",
+        background: "#f7f9fb",
         borderRadius: 10,
-        border: "1px solid #e2e8f0",
+        border: "1.5px solid rgba(116,119,126,0.1)",
         overflow: "hidden",
         position: "relative",
       }}
@@ -329,7 +329,7 @@ export default function GraphView({ data, onKeywordClick, isMobile }: GraphViewP
               style={{
                 width: 28,
                 height: 28,
-                border: "1px solid #e2e8f0",
+                border: "1.5px solid rgba(116,119,126,0.1)",
                 borderRadius: 6,
                 background: "rgba(255,255,255,0.9)",
                 cursor: "pointer",
@@ -337,7 +337,7 @@ export default function GraphView({ data, onKeywordClick, isMobile }: GraphViewP
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: "0.85rem",
-                color: "#475467",
+                color: "#43474d",
                 padding: 0,
               }}
               title={action === "zoomIn" ? "확대" : action === "zoomOut" ? "축소" : "초기화"}
@@ -357,19 +357,19 @@ export default function GraphView({ data, onKeywordClick, isMobile }: GraphViewP
           display: "flex",
           gap: 14,
           fontSize: "0.78rem",
-          color: "#475467",
+          color: "#43474d",
           background: "rgba(255,255,255,0.85)",
           padding: "4px 10px",
           borderRadius: 8,
-          border: "1px solid #e2e8f0",
+          border: "1.5px solid rgba(116,119,126,0.1)",
         }}
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#0f766e" }} />
+          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#1d2a3d" }} />
           키워드
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#60a5fa" }} />
+          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#afcbd8" }} />
           기사
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>

@@ -69,7 +69,7 @@ export default function TimelineView({ data }: TimelineViewProps) {
       )
       .selectAll("text")
       .attr("font-size", "11px")
-      .attr("fill", "#475467");
+      .attr("fill", "#43474d");
 
     // Horizontal guide line
     g.append("line")
@@ -77,7 +77,7 @@ export default function TimelineView({ data }: TimelineViewProps) {
       .attr("x2", innerW)
       .attr("y1", yCenter)
       .attr("y2", yCenter)
-      .attr("stroke", "#e2e8f0")
+      .attr("stroke", "#c4c6ce")
       .attr("stroke-width", 1);
 
     // Tooltip
@@ -97,17 +97,17 @@ export default function TimelineView({ data }: TimelineViewProps) {
       .attr("cx", (d) => xScale(d.date))
       .attr("cy", (_, i) => yCenter + (jitterSeed(i) - 0.5) * 2 * jitterRange)
       .attr("r", 6)
-      .attr("fill", "#60a5fa")
-      .attr("stroke", "#3b82f6")
+      .attr("fill", "#afcbd8")
+      .attr("stroke", "#48626e")
       .attr("stroke-width", 1.5)
       .style("cursor", "pointer")
       .on("mouseenter", function (event, d) {
         d3.select(this).transition().duration(100).attr("r", 9).attr("stroke-width", 2.5);
-        const kws = d.keywords.length > 0 ? `<br/><span style="color:#64748b">${d.keywords.slice(0, 5).join(", ")}</span>` : "";
+        const kws = d.keywords.length > 0 ? `<br/><span style="color:#43474d">${d.keywords.slice(0, 5).join(", ")}</span>` : "";
         tooltip
           .html(
             `<strong>${truncate(d.title, 50)}</strong><br/>` +
-            `<span style="color:#64748b">${d.source ?? ""} · ${d3.timeFormat("%Y-%m-%d")(d.date)}</span>` +
+            `<span style="color:#43474d">${d.source ?? ""} · ${d3.timeFormat("%Y-%m-%d")(d.date)}</span>` +
             kws
           )
           .style("left", `${event.pageX + 12}px`)
@@ -138,13 +138,13 @@ export default function TimelineView({ data }: TimelineViewProps) {
         style={{
           width: "100%",
           height: 340,
-          background: "#f8fafc",
+          background: "#f7f9fb",
           borderRadius: 10,
-          border: "1px solid #e2e8f0",
+          border: "1.5px solid rgba(116,119,126,0.1)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "#94a3b8",
+          color: "#74777e",
           fontSize: "0.9rem",
         }}
       >
@@ -159,9 +159,9 @@ export default function TimelineView({ data }: TimelineViewProps) {
       style={{
         width: "100%",
         overflowX: "auto",
-        background: "#f8fafc",
+        background: "#f7f9fb",
         borderRadius: 10,
-        border: "1px solid #e2e8f0",
+        border: "1.5px solid rgba(116,119,126,0.1)",
       }}
     >
       <svg ref={svgRef} style={{ display: "block", minHeight: 340 }} />

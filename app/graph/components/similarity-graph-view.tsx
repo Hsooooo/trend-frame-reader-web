@@ -34,13 +34,13 @@ function keywordRadius(freq: number): number {
 function keywordFill(sentiment: number): string {
   if (sentiment > 0.3) return "#86efac";
   if (sentiment < -0.3) return "#fca5a5";
-  return "#0f766e";
+  return "#1d2a3d";
 }
 
 function keywordStroke(sentiment: number): string {
   if (sentiment > 0.3) return "#4ade80";
   if (sentiment < -0.3) return "#f87171";
-  return "#0d9488";
+  return "#344054";
 }
 
 function truncate(text: string, max: number): string {
@@ -71,8 +71,8 @@ export default function SimilarityGraphView({ data, onKeywordClick, isMobile }: 
         radius: kw.is_root
           ? keywordRadius(Math.max(kw.doc_frequency, kw.bookmark_frequency)) + 4
           : keywordRadius(Math.max(kw.doc_frequency, kw.bookmark_frequency)),
-        fillColor: kw.is_root ? "#ccfbf1" : keywordFill(kw.sentiment_score),
-        strokeColor: kw.is_root ? "#14b8a6" : keywordStroke(kw.sentiment_score),
+        fillColor: kw.is_root ? "#cbe7f5" : keywordFill(kw.sentiment_score),
+        strokeColor: kw.is_root ? "#1d2a3d" : keywordStroke(kw.sentiment_score),
       };
       nodes.push(node);
       nodeMap.set(kw.id, node);
@@ -85,8 +85,8 @@ export default function SimilarityGraphView({ data, onKeywordClick, isMobile }: 
         label: truncate(art.title, 20),
         url: art.url,
         radius: 8,
-        fillColor: "#60a5fa",
-        strokeColor: "#3b82f6",
+        fillColor: "#afcbd8",
+        strokeColor: "#48626e",
       };
       nodes.push(node);
       nodeMap.set(art.id, node);
@@ -168,7 +168,7 @@ export default function SimilarityGraphView({ data, onKeywordClick, isMobile }: 
       .data(links)
       .enter()
       .append("line")
-      .attr("stroke", (d) => (d.edgeType === "similarity" ? "#2dd4bf" : "#bfdbfe"))
+      .attr("stroke", (d) => (d.edgeType === "similarity" ? "#afcbd8" : "#cbe7f5"))
       .attr("stroke-width", (d) =>
         d.edgeType === "similarity" ? Math.max(1, Math.min(4, d.weight * 4)) : 1
       )
@@ -214,7 +214,7 @@ export default function SimilarityGraphView({ data, onKeywordClick, isMobile }: 
       .attr("text-anchor", "middle")
       .attr("dy", (d) => d.radius + 14)
       .attr("font-size", (d) => (d.kind === "keyword" ? "12px" : "10px"))
-      .attr("fill", (d) => (d.kind === "keyword" ? "#101828" : "#475467"))
+      .attr("fill", (d) => (d.kind === "keyword" ? "#191c1e" : "#43474d"))
       .attr("font-weight", (d) => (d.kind === "keyword" ? "600" : "400"))
       .attr("font-family", "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif")
       .text((d) => d.label);
@@ -279,9 +279,9 @@ export default function SimilarityGraphView({ data, onKeywordClick, isMobile }: 
       style={{
         width: "100%",
         height: 540,
-        background: "#f8fafc",
+        background: "#f7f9fb",
         borderRadius: 10,
-        border: "1px solid #e2e8f0",
+        border: "1.5px solid rgba(116,119,126,0.1)",
         overflow: "hidden",
         position: "relative",
       }}
@@ -314,7 +314,7 @@ export default function SimilarityGraphView({ data, onKeywordClick, isMobile }: 
               style={{
                 width: 28,
                 height: 28,
-                border: "1px solid #e2e8f0",
+                border: "1.5px solid rgba(116,119,126,0.1)",
                 borderRadius: 6,
                 background: "rgba(255,255,255,0.9)",
                 cursor: "pointer",
@@ -322,7 +322,7 @@ export default function SimilarityGraphView({ data, onKeywordClick, isMobile }: 
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: "0.85rem",
-                color: "#475467",
+                color: "#43474d",
                 padding: 0,
               }}
               title={action === "zoomIn" ? "확대" : action === "zoomOut" ? "축소" : "초기화"}
@@ -342,23 +342,23 @@ export default function SimilarityGraphView({ data, onKeywordClick, isMobile }: 
           display: "flex",
           gap: 14,
           fontSize: "0.78rem",
-          color: "#475467",
+          color: "#43474d",
           background: "rgba(255,255,255,0.85)",
           padding: "4px 10px",
           borderRadius: 8,
-          border: "1px solid #e2e8f0",
+          border: "1.5px solid rgba(116,119,126,0.1)",
         }}
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#ccfbf1", border: "1.5px solid #14b8a6" }} />
+          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#cbe7f5", border: "1.5px solid #1d2a3d" }} />
           루트 키워드
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ display: "inline-block", width: 24, height: 3, background: "#2dd4bf", borderRadius: 2 }} />
+          <span style={{ display: "inline-block", width: 24, height: 3, background: "#afcbd8", borderRadius: 2 }} />
           유사도
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#60a5fa" }} />
+          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#afcbd8" }} />
           기사
         </span>
       </div>

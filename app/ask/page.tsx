@@ -27,7 +27,7 @@ function AnswerBlock({ query, result }: { query: string; result: AskResult }) {
       </div>
 
       {/* Answer panel */}
-      <div className="panel" style={{ marginTop: 0 }}>
+      <div className="panel glass-pane" style={{ marginTop: 0 }}>
         <div className="ask-answer-label">
           답변
         </div>
@@ -137,7 +137,7 @@ export default function AskPage() {
   if (!authLoading && !user) {
     return (
       <main className="ask-page">
-        <h1>북마크 Q&amp;A</h1>
+        <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 800 }}>Ask about your saved news</h1>
         <section className="panel">
           <p className="meta">
             Q&A를 사용하려면{" "}
@@ -155,12 +155,11 @@ export default function AskPage() {
     <main className="ask-page">
       {/* Header */}
       <div className="page-header">
-        <h1>북마크 Q&amp;A</h1>
-        <a href="/" className="ask-back-btn">
-          ← 홈
-        </a>
+        <div>
+          <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 800, letterSpacing: '-0.02em' }}>Ask about your saved news</h1>
+          <p style={{ marginTop: 'var(--space-1)', marginBottom: 'var(--space-4)' }}>저장한 북마크 기반으로 질문에 답합니다.</p>
+        </div>
       </div>
-      <p style={{ marginBottom: 16 }}>저장한 북마크 기반으로 질문에 답합니다.</p>
 
       {/* Suggested chips */}
       <div className="ask-chips">
